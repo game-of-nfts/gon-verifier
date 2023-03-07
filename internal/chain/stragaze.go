@@ -1,13 +1,34 @@
 package chain
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	wasmtype "github.com/taramakage/gon-verifier/x/wasm/types"
+	"google.golang.org/grpc"
 	"io/ioutil"
 	"net/http"
 )
 
 type Stargaze struct {
+	conn       *grpc.ClientConn
+	wasmClient wasmtype.QueryClient
+}
+
+func NewStargaze() *Stargaze {
+	conn, err := grpc.Dial(
+		ChainGRPCStars,
+		grpc.WithInsecure(),
+		grpc.WithDefaultCallOptions(),
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	return &Stargaze{
+		conn:       conn, // NOTE: Close this connection when the program exits
+		wasmClient: wasmtype.NewQueryClient(conn),
+	}
 }
 
 func (Stargaze) GetTx(txHash string) (*TxResult, error) {
@@ -38,9 +59,69 @@ func (Stargaze) GetTx(txHash string) (*TxResult, error) {
 
 	return GetTxResult(&data), nil
 }
-func (Stargaze) GetNFT(classID, nftID string) (*NFT, error) {
-	return nil, nil
+func (s Stargaze) GetNFT(classID, nftID string) (*NFT, error) {
+	wq := WasmQueryNFT{
+		NftInfo: NftInfo{nftID},
+	}
+	// convert wq to json string
+	bz, err := json.Marshal(wq)
+	if err != nil {
+		return nil, err
+	}
+
+	req := &wasmtype.QuerySmartContractStateRequest{
+		Address:   classID,
+		QueryData: bz,
+	}
+	_, err = s.wasmClient.SmartContractState(context.Background(), req)
+	if err != nil {
+		return nil, err
+	}
+
+	return &NFT{
+		ID: nftID,
+	}, nil
 }
-func (Stargaze) HasNFT(classID, nftID string) bool       { return false }
-func (Stargaze) GetClass(classID string) (*Class, error) { return nil, nil }
-func (Stargaze) HasClass(classID string) bool            { return false }
+
+func (s Stargaze) HasNFT(classID, nftID string) bool {
+	_, err := s.GetNFT(classID, nftID)
+	if err != nil {
+		return false
+	}
+	return true
+}
+
+func (s Stargaze) GetClass(classID string) (*Class, error) {
+	wq := WasmQueryClass{}
+	// convert wq to json string
+	bz, err := json.Marshal(wq)
+	if err != nil {
+		return nil, err
+	}
+
+	req := &wasmtype.QuerySmartContractStateRequest{
+		Address:   classID,
+		QueryData: bz,
+	}
+	res, err := s.wasmClient.SmartContractState(context.Background(), req)
+	fmt.Println(res)
+	if err != nil {
+		return nil, err
+	}
+
+	wr := WasmRespClass{}
+	err = json.Unmarshal(res.Data, &wr)
+	if err != nil {
+		return nil, nil
+	}
+
+	return &Class{}, nil
+}
+
+func (s Stargaze) HasClass(classID string) bool {
+	_, err := s.GetClass(classID)
+	if err != nil {
+		return false
+	}
+	return true
+}
