@@ -3,4 +3,4 @@
 test
 internal/chain/*_test.go
 internal/verifier/*_test.go
-internal/verifier/verify_test.go
+internal/verify_test.go
