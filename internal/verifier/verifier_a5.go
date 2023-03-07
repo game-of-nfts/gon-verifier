@@ -81,10 +81,10 @@ func (v A5Verifier) BuildParams(rows [][]string) (any, error) {
 		return nil, errors.New("rows length not match")
 	}
 
-	param := rows[1]
-	chainAbbr := chain.ChainIdAbbreviationUptick
-	if param[3] == chain.ChainIdValueOmniflix {
-		chainAbbr = chain.ChainIdAbbreviationOmniflix
+	param := rows[0]
+	chainAbbr := chain.ChainIdAbbreviationStars
+	if param[3] == chain.ChainIdValueJuno {
+		chainAbbr = chain.ChainIdAbbreviationJuno
 	}
 
 	return A5Params{

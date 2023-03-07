@@ -81,13 +81,13 @@ func (v A6Verifier) BuildParams(rows [][]string) (any, error) {
 		return nil, errors.New("rows length not match")
 	}
 
-	param := rows[1]
-	chainAbbr := chain.ChainIdAbbreviationStars
-	if param[3] == chain.ChainIdValueJuno {
-		chainAbbr = chain.ChainIdAbbreviationJuno
+	param := rows[0]
+	chainAbbr := chain.ChainIdAbbreviationUptick
+	if param[3] == chain.ChainIdValueOmniflix {
+		chainAbbr = chain.ChainIdAbbreviationOmniflix
 	}
 
-	return A5Params{
+	return A6Params{
 		ChainAbbreviation: chainAbbr,
 		TxHash:            param[0],
 		ClassID:           param[1], // Wasm Contract Addr

@@ -75,7 +75,7 @@ func (v A4Verifier) BuildParams(rows [][]string) (any, error) {
 		return nil, errors.New("rows length not match")
 	}
 
-	param := rows[1]
+	param := rows[0]
 	chainAbbr := chain.ChainIdAbbreviationUptick
 	if param[3] == chain.ChainIdValueOmniflix {
 		chainAbbr = chain.ChainIdAbbreviationOmniflix

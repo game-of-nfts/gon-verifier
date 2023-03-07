@@ -36,7 +36,6 @@ func (v A3Verifier) Do(req Request, res chan<- *Response) {
 		return
 	}
 
-	// NOTE: check tx on iris
 	iris := v.r.GetChain(chain.ChainIdAbbreviationIris)
 	tx, err := iris.GetTx(params.TxHash)
 	if err != nil {
@@ -75,7 +74,7 @@ func (v A3Verifier) BuildParams(rows [][]string) (any, error) {
 		return nil, errors.New("rows length not match")
 	}
 
-	param := rows[1]
+	param := rows[0]
 	chainAbbr := chain.ChainIdAbbreviationStars
 	if param[3] == chain.ChainIdValueJuno {
 		chainAbbr = chain.ChainIdAbbreviationJuno

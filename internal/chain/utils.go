@@ -22,6 +22,7 @@ type WasmRespClass struct {
 	Count int `json:"count"`
 }
 
+// TODO: event.Type = message, ibc_nft_transfer,wasm, etc.
 func GetTxResult(data *TxResultHttp) *TxResult {
 	txResult := TxResult{}
 	for _, event := range data.Result.TxResult.Events {

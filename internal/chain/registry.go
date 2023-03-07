@@ -105,8 +105,8 @@ func NewRegistry() *Registry {
 	return &Registry{
 		chains: map[string]Chain{
 			ChainIdAbbreviationIris:     NewIris(),
-			ChainIdAbbreviationStars:    Stargaze{},
-			ChainIdAbbreviationJuno:     Juno{},
+			ChainIdAbbreviationStars:    NewStargaze(),
+			ChainIdAbbreviationJuno:     NewJuno(),
 			ChainIdAbbreviationUptick:   NewUptick(),
 			ChainIdAbbreviationOmniflix: NewOmniflix(),
 		},
