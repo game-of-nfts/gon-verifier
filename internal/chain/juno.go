@@ -66,9 +66,8 @@ func (j Juno) GetTx(txHash, txType string) (any, error) {
 	return nil, fmt.Errorf("unknown tx type: %s", txType)
 }
 
-func (j Juno) getTxResultIbcNft(data *types.TxResponse) (*types.TxResultIbcNft, error) {
-	// TODO: Implement this
-	return nil, nil
+func (j Juno) getTxResultIbcNft(data *types.TxResponse) (any, error) {
+	return data.IbcNftPkg()
 }
 
 func (j Juno) GetNFT(classID, nftID string) (*NFT, error) {

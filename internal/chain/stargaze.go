@@ -66,9 +66,8 @@ func (s Stargaze) GetTx(txHash, txType string) (any, error) {
 	return nil, fmt.Errorf("unknown tx type: %s", txType)
 }
 
-func (s Stargaze) getTxResultIbcNft(data *types.TxResponse) (*types.TxResultIbcNft, error) {
-	// TODO: Implement this
-	return nil, nil
+func (s Stargaze) getTxResultIbcNft(data *types.TxResponse) (any, error) {
+	return data.IbcNftPkg()
 }
 
 func (s Stargaze) GetNFT(classID, nftID string) (*NFT, error) {

@@ -14,8 +14,10 @@ const (
 	ReasonClassDataInvalid     = "Class: data is invalid"
 	ReasonClassUrIEmpty        = "Class: uri is empty"
 
-	ReasonNftNotFound      = "NFT: not found"
-	ReasonNftOwnerNotMatch = "NFT: initial owner not match register address"
-	ReasonNftUriEmpty      = "NFT: uri is empty"
-	ReasonNftDataEmpty     = "NFT: data is empty"
+	ReasonNftNotFound          = "NFT: not found"
+	ReasonNftOwnerNotMatch     = "NFT: initial owner not match register address"
+	ReasonNftRecipientNotMatch = "NFT: recipient not match register address"
+	ReasonNftTokenIdNotMatch   = "NFT: token id not match"
+	ReasonNftUriEmpty          = "NFT: uri is empty"
+	ReasonNftDataEmpty         = "NFT: data is empty"
 )

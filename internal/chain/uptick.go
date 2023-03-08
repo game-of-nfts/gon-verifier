@@ -68,8 +68,7 @@ func (u Uptick) GetTx(txHash, txType string) (any, error) {
 }
 
 func (u Uptick) getTxResultIbcNft(data *types.TxResponse) (any, error) {
-	// TODO: Implement this
-	return nil, nil
+	return data.IbcNftPkg()
 }
 
 func (u Uptick) GetNFT(classID, nftID string) (*NFT, error) {

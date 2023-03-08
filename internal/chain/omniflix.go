@@ -64,8 +64,7 @@ func (o Omniflix) GetTx(txHash, txType string) (any, error) {
 }
 
 func (o Omniflix) getTxResultIbcNft(data *types.TxResponse) (any, error) {
-	// TODO: Implement this
-	return nil, nil
+	return data.IbcNftPkg()
 }
 
 func (o Omniflix) GetNFT(classID, nftID string) (*NFT, error) {

@@ -10,7 +10,7 @@ import (
 type A1Params struct {
 	ChainAbbreviation string
 	TxHash            string
-	ClassID           string
+	ClassId           string
 }
 
 type A1Verifier struct {
@@ -37,7 +37,6 @@ func (v A1Verifier) Do(req Request, res chan<- *Response) {
 		res <- result
 		return
 	}
-
 	if len(params.TxHash) == 0 {
 		result.Reason = ReasonParamsChainIdEmpty
 		res <- result
@@ -70,7 +69,7 @@ func (v A1Verifier) Do(req Request, res chan<- *Response) {
 	}
 
 	// query class on chain
-	class, err := c.GetClass(params.ClassID)
+	class, err := c.GetClass(params.ClassId)
 	if err != nil {
 		result.Reason = ReasonClassNotFound
 		res <- result
@@ -109,6 +108,6 @@ func (v A1Verifier) BuildParams(rows [][]string) (any, error) {
 	return A1Params{
 		ChainAbbreviation: chain.ChainIdAbbreviationIris,
 		TxHash:            rowFirst[0],
-		ClassID:           rowFirst[1],
+		ClassId:           rowFirst[1],
 	}, nil
 }

@@ -96,21 +96,7 @@ func (i Iris) getTxResultMintNft(data *types.TxResponse) (any, error) {
 }
 
 func (i Iris) getTxResultIbcNft(data *types.TxResponse) (any, error) {
-	ibcPkgRaw := data.EventAttributeValueByKey(types.EventTypeIbcSendPacket, types.AttributeKeyIbcPackageData)
-	var ibcPkg types.IbcNftPacket
-	err := json.Unmarshal([]byte(ibcPkgRaw), &ibcPkg)
-	if err != nil {
-		return nil, err
-	}
-
-	return types.TxResultIbcNft{
-		Sender:   data.EventAttributeValueByKey(types.EventTypeIbcNftTransfer, types.AttributeKeySender),
-		Receiver: data.EventAttributeValueByKey(types.EventTypeIbcNftTransfer, types.AttributeKeySender),
-		DestPort: data.EventAttributeValueByKey(types.EventTypeIbcSendPacket, types.AttributeKeyDestPort),
-		DestChan: data.EventAttributeValueByKey(types.EventTypeIbcSendPacket, types.AttributeKeyDestChan),
-		TokenId:  ibcPkg.TokenIds[0],
-		TxCode:   data.Result.TxResult.Code,
-	}, nil
+	return data.IbcNftPkg()
 }
 
 func (i Iris) GetNFT(classID, nftID string) (*NFT, error) {

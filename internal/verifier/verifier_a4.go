@@ -3,14 +3,15 @@ package verifier
 import (
 	"errors"
 	"github.com/taramakage/gon-verifier/internal/chain"
+	"github.com/taramakage/gon-verifier/internal/types"
 )
 
 type A4Params struct {
 	ChainAbbreviation string
 	TxHash            string
-	ClassID           string // Wasm Contract Addr
-	NFTID             string
-	ChainID           string // Dest Chain ID
+	ClassId           string // IBC Class
+	TokenId           string
+	ChainId           string // Dest Chain Id
 }
 
 type A4Verifier struct {
@@ -23,45 +24,58 @@ func (v A4Verifier) Do(req Request, res chan<- *Response) {
 		TeamName: req.User.TeamName,
 	}
 
-	params, ok := req.Params.(A3Params)
+	params, ok := req.Params.(A4Params)
 	if !ok {
-		result.Reason = ReasonIllegalParams
+		result.Reason = ReasonParamsFormatIncorrect
+		res <- result
+		return
+	}
+	if len(params.ChainAbbreviation) == 0 {
+		result.Reason = ReasonParamsChainIdEmpty
 		res <- result
 		return
 	}
 
-	if len(params.TxHash) == 0 {
-		result.Reason = ReasonTxHashEmpty
-		res <- result
-		return
-	}
-
-	// NOTE: check tx on iris
 	iris := v.r.GetChain(chain.ChainIdAbbreviationIris)
-	tx, err := iris.GetTx(params.TxHash)
+	txi, err := iris.GetTx(params.TxHash, types.TxResultTypeIbcNft)
 	if err != nil {
-		result.Reason = err.Error()
+		result.Reason = ReasonTxResultUnachievable
+		res <- result
+		return
+	}
+	tx, ok := txi.(types.TxResultIbcNft)
+	if !ok {
+		result.Reason = ReasonTxResultUnexpected
+		res <- result
+		return
+	}
+	if tx.TxCode != 0 {
+		result.Reason = ReasonTxResultUnsuccessful
+		res <- result
+		return
+	}
+
+	// query ibc class on chain
+	destChain := v.r.GetChain(params.ChainAbbreviation)
+	if ok := destChain.HasClass(params.ClassId); !ok {
+		result.Reason = ReasonClassNotFound
 		res <- result
 		return
 	}
 
 	if req.User.Address[chain.ChainIdAbbreviationIris] != tx.Sender {
-		result.Reason = ReasonSenderNotMatch
+		result.Reason = ReasonTxMsgSenderNotMatch
+		res <- result
+		return
+	}
+	if req.User.Address[params.ChainAbbreviation] != tx.Receiver {
+		result.Reason = ReasonNftRecipientNotMatch
 		res <- result
 		return
 	}
 
-	destChain := v.r.GetChain(params.ChainAbbreviation)
-	nft, err := destChain.GetNFT(params.ClassID, params.NFTID)
-	if err != nil {
-		result.Reason = err.Error()
-		res <- result
-		return
-	}
-
-	// FIXME: if A6 completed, owner is empty. if not, owner is user.
-	if nft.Owner != req.User.Address[params.ChainAbbreviation] || len(nft.Owner) != 0 {
-		result.Reason = ReasonNFTOwnerNotMatch
+	if tx.TokenId != params.TokenId {
+		result.Reason = ReasonNftTokenIdNotMatch
 		res <- result
 		return
 	}
@@ -71,21 +85,24 @@ func (v A4Verifier) Do(req Request, res chan<- *Response) {
 }
 
 func (v A4Verifier) BuildParams(rows [][]string) (any, error) {
-	if len(rows) != 1 {
-		return nil, errors.New("rows length not match")
+	if len(rows) < 1 {
+		return nil, errors.New("format is incorrect")
 	}
 
 	param := rows[0]
-	chainAbbr := chain.ChainIdAbbreviationUptick
+	chainAbbr := ""
 	if param[3] == chain.ChainIdValueOmniflix {
 		chainAbbr = chain.ChainIdAbbreviationOmniflix
+	}
+	if param[3] == chain.ChainIdValueUptick {
+		chainAbbr = chain.ChainIdAbbreviationUptick
 	}
 
 	return A4Params{
 		ChainAbbreviation: chainAbbr,
 		TxHash:            param[0],
-		ClassID:           param[1],
-		NFTID:             param[2],
-		ChainID:           param[3],
+		ClassId:           param[1],
+		TokenId:           param[2],
+		ChainId:           param[3],
 	}, nil
 }

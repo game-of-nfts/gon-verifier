@@ -8,9 +8,9 @@ import (
 
 type A2Params struct {
 	ChainAbbreviation string
-	TxHash            []string
-	ClassID           []string
-	NFTID             []string
+	TxHashes          []string
+	ClassIds          []string
+	TokenIds          []string
 }
 
 type A2Verifier struct {
@@ -39,8 +39,8 @@ func (v A2Verifier) Do(req Request, res chan<- *Response) {
 
 	// a2 validation
 	c := v.r.GetChain(params.ChainAbbreviation)
-	for i := range params.TxHash {
-		txi, err := c.GetTx(params.TxHash[i], types.TxResultTypeMintNft)
+	for i := range params.TxHashes {
+		txi, err := c.GetTx(params.TxHashes[i], types.TxResultTypeMintNft)
 		if err != nil {
 			result.Reason = ReasonTxResultUnachievable
 			res <- result
@@ -59,7 +59,7 @@ func (v A2Verifier) Do(req Request, res chan<- *Response) {
 		}
 
 		// class owner must be the same as register address on iris
-		class, err := c.GetClass(params.ClassID[i])
+		class, err := c.GetClass(params.ClassIds[i])
 		if err != nil {
 			result.Reason = ReasonClassNotFound
 			res <- result
@@ -84,7 +84,7 @@ func (v A2Verifier) Do(req Request, res chan<- *Response) {
 		}
 
 		// query nft on chain
-		nft, err := c.GetNFT(params.ClassID[i], params.NFTID[i])
+		nft, err := c.GetNFT(params.ClassIds[i], params.TokenIds[i])
 		if err != nil {
 			result.Reason = ReasonNftNotFound
 			res <- result
@@ -110,29 +110,25 @@ func (v A2Verifier) Do(req Request, res chan<- *Response) {
 
 func (v A2Verifier) BuildParams(rows [][]string) (any, error) {
 	if len(rows) < 2 {
-		return nil, errors.New("参数行数不足")
+		return nil, errors.New("format is incorrect")
 	}
 
 	params := A2Params{
 		ChainAbbreviation: chain.ChainIdAbbreviationIris,
-		TxHash:            make([]string, 0),
-		ClassID:           make([]string, 0),
-		NFTID:             make([]string, 0),
+		TxHashes:          make([]string, 0),
+		ClassIds:          make([]string, 0),
+		TokenIds:          make([]string, 0),
 	}
 
 	// NOTE: only the first two rows are read
 	for i := range rows {
-		if i == 0 {
-			continue
-		}
-
-		if i == 3 {
+		if i == 2 {
 			break
 		}
 
-		params.TxHash = append(params.TxHash, rows[i][0])
-		params.ClassID = append(params.ClassID, rows[i][1])
-		params.NFTID = append(params.NFTID, rows[i][2])
+		params.TxHashes = append(params.TxHashes, rows[i][0])
+		params.ClassIds = append(params.ClassIds, rows[i][1])
+		params.TokenIds = append(params.TokenIds, rows[i][2])
 	}
 
 	return params, nil

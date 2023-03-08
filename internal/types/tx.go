@@ -2,6 +2,8 @@ package types
 
 import (
 	"encoding/base64"
+	"encoding/json"
+	"strings"
 )
 
 const (
@@ -37,6 +39,7 @@ type (
 		Receiver string
 		DestPort string
 		DestChan string
+		ClassId  string
 		TokenId  string
 		TxCode   int
 	}
@@ -125,4 +128,29 @@ func (tx *TxResponse) EventAttributeValueByKey(event, key string) string {
 		}
 	}
 	return ""
+}
+
+func (tx *TxResponse) IbcNftPkg() (any, error) {
+	ibcPkgRaw := tx.EventAttributeValueByKey(EventTypeIbcSendPacket, AttributeKeyIbcPackageData)
+	var ibcPkg IbcNftPacket
+	err := json.Unmarshal([]byte(ibcPkgRaw), &ibcPkg)
+	if err != nil {
+		return nil, err
+	}
+
+	return TxResultIbcNft{
+		Sender:   tx.EventAttributeValueByKey(EventTypeIbcSendPacket, AttributeKeySender),
+		Receiver: tx.EventAttributeValueByKey(EventTypeIbcSendPacket, AttributeKeyReceiver),
+		DestPort: tx.EventAttributeValueByKey(EventTypeIbcSendPacket, AttributeKeyDestPort),
+		DestChan: tx.EventAttributeValueByKey(EventTypeIbcSendPacket, AttributeKeyDestChan),
+		ClassId:  ibcPkg.ClassId,
+		TokenId:  ibcPkg.TokenIds[0],
+		TxCode:   tx.Result.TxResult.Code,
+	}, nil
+}
+
+func (txIbc *TxResultIbcNft) OriginalClass() string {
+	ibcClassId := txIbc.ClassId
+	elements := strings.Split(ibcClassId, "/")
+	return elements[len(elements)-1]
 }

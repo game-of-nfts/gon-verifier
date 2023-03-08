@@ -3,14 +3,15 @@ package verifier
 import (
 	"errors"
 	"github.com/taramakage/gon-verifier/internal/chain"
+	"github.com/taramakage/gon-verifier/internal/types"
 )
 
 type A5Params struct {
 	ChainAbbreviation string
 	TxHash            string
-	ClassID           string // Wasm Contract Addr
-	NFTID             string
-	ChainID           string // Dest Chain ID
+	ClassId           string // Wasm Contract Addr
+	TokenId           string
+	ChainId           string // Dest Chain ID
 }
 
 type A5Verifier struct {
@@ -25,51 +26,57 @@ func (v A5Verifier) Do(req Request, res chan<- *Response) {
 
 	params, ok := req.Params.(A5Params)
 	if !ok {
-		result.Reason = ReasonIllegalParams
+		result.Reason = ReasonParamsFormatIncorrect
 		res <- result
 		return
 	}
-
 	if len(params.TxHash) == 0 {
-		result.Reason = ReasonTxHashEmpty
+		result.Reason = ReasonParamsChainIdEmpty
 		res <- result
 		return
 	}
 
 	srcChain := v.r.GetChain(params.ChainAbbreviation)
-	tx, err := srcChain.GetTx(params.TxHash)
+	txi, err := srcChain.GetTx(params.TxHash, types.TxResultTypeIbcNft)
 	if err != nil {
-		result.Reason = err.Error()
+		result.Reason = ReasonTxResultUnachievable
+		res <- result
+		return
+	}
+	tx, ok := txi.(types.TxResultIbcNft)
+	if !ok {
+		result.Reason = ReasonTxResultUnexpected
+		res <- result
+		return
+	}
+	if tx.TxCode != 0 {
+		result.Reason = ReasonTxResultUnsuccessful
 		res <- result
 		return
 	}
 
-	if req.User.Address[params.ChainAbbreviation] != tx.Sender {
-		result.Reason = ReasonSenderNotMatch
-		res <- result
-		return
-	}
-
-	// FIXME: receiver must be the iris addr
-
-	if !srcChain.HasClass(params.ClassID) {
+	// query cw-721 addr on chain
+	if !srcChain.HasClass(params.ClassId) {
 		result.Reason = ReasonClassNotFound
 		res <- result
 		return
 	}
 
-	// FIXME: check original class on iris
-	originalClassID := ""
-	iris := v.r.GetChain(chain.ChainIdAbbreviationIris)
-	nft, err := iris.GetNFT(originalClassID, params.NFTID)
-	if err != nil {
-		result.Reason = err.Error()
+	if req.User.Address[params.ChainAbbreviation] != tx.Sender {
+		result.Reason = ReasonTxMsgSenderNotMatch
+		res <- result
+		return
+	}
+	if req.User.Address[chain.ChainIdAbbreviationIris] != tx.Receiver {
+		result.Reason = ReasonNftRecipientNotMatch
 		res <- result
 		return
 	}
 
-	if nft.Owner != req.User.Address[chain.ChainIdAbbreviationIris] {
-		result.Reason = ReasonNFTOwnerNotMatch
+	iris := v.r.GetChain(chain.ChainIdAbbreviationIris)
+	originalClassId := tx.OriginalClass()
+	if !iris.HasNFT(originalClassId, params.TokenId) {
+		result.Reason = ReasonNftNotFound
 		res <- result
 		return
 	}
@@ -84,16 +91,19 @@ func (v A5Verifier) BuildParams(rows [][]string) (any, error) {
 	}
 
 	param := rows[0]
-	chainAbbr := chain.ChainIdAbbreviationStars
+	chainAbbr := ""
 	if param[3] == chain.ChainIdValueJuno {
+		chainAbbr = chain.ChainIdAbbreviationJuno
+	}
+	if param[3] == chain.ChainIdAbbreviationStars {
 		chainAbbr = chain.ChainIdAbbreviationJuno
 	}
 
 	return A5Params{
 		ChainAbbreviation: chainAbbr,
 		TxHash:            param[0],
-		ClassID:           param[1], // Wasm Contract Addr
-		NFTID:             param[2],
-		ChainID:           param[3],
+		ClassId:           param[1], // Wasm Contract Addr
+		TokenId:           param[2],
+		ChainId:           param[3],
 	}, nil
 }
