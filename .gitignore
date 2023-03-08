@@ -2,9 +2,11 @@
 .vscode
 
 test
-example
+txjson
+data
 
 internal/chain/*_test.go
+internal/scorecard/*_test.go
 internal/verifier/*_test.go
 internal/types/*_test.go
 internal/*_test.go

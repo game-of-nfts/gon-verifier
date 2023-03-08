@@ -1,8 +1,9 @@
-package internal
+package verifier
 
 import (
 	"errors"
 	"fmt"
+	"github.com/taramakage/gon-verifier/internal/scorecard"
 	"github.com/xuri/excelize/v2"
 	"os"
 	"path/filepath"
@@ -12,7 +13,6 @@ import (
 	"golang.org/x/exp/slog"
 
 	"github.com/taramakage/gon-verifier/internal/chain"
-	"github.com/taramakage/gon-verifier/internal/verifier"
 )
 
 type (
@@ -23,16 +23,16 @@ type (
 	Task struct {
 		taskNo string
 		params any
-		vf     verifier.Verifier
+		vf     Verifier
 	}
 
 	TaskManager struct {
 		tasks    []Task
-		user     verifier.UserInfo
-		vr       *verifier.Registry
+		user     UserInfo
+		vr       *Registry
 		wg       *sync.WaitGroup
 		baseDir  string
-		resultCh chan *verifier.Response
+		resultCh chan *Response
 		stopCh   chan int
 		saveCh   chan int
 	}
@@ -41,8 +41,8 @@ type (
 func NewTaskManager(evidenceFile string, opts *Options) (*TaskManager, error) {
 	tm := &TaskManager{
 		wg:       &sync.WaitGroup{},
-		vr:       verifier.NewRegistry(chain.NewRegistry()),
-		resultCh: make(chan *verifier.Response, 10),
+		vr:       NewRegistry(chain.NewRegistry()),
+		resultCh: make(chan *Response, 10),
 		stopCh:   make(chan int),
 		saveCh:   make(chan int),
 	}
@@ -66,7 +66,7 @@ func (tm *TaskManager) Process() {
 		go func(task Task) {
 			defer tm.wg.Done()
 			slog.Info("verify rule", "TeamName", tm.user.TeamName, "TaskNo", task.taskNo)
-			task.vf.Do(*&verifier.Request{
+			task.vf.Do(*&Request{
 				TaskNo: task.taskNo,
 				User:   tm.user,
 				Params: task.params,
@@ -106,7 +106,7 @@ func (tm *TaskManager) receive() {
 		case <-tm.stopCh:
 			f.SetActiveSheet(index)
 
-			fileName := filepath.Join(tm.baseDir, fmt.Sprintf("%s.xlsx", tm.user.Github))
+			fileName := filepath.Join(tm.baseDir, scorecard.DefaultTaskPointFile)
 			if err := f.SaveAs(fileName); err != nil {
 				slog.Error("Save file error", err)
 			}
@@ -157,7 +157,7 @@ func (tm *TaskManager) loadUserInfo(evidence *excelize.File) error {
 		github = paths[len(paths)-1]
 	}
 
-	tm.user = verifier.UserInfo{
+	tm.user = UserInfo{
 		TeamName: columns[0],
 		Github:   github,
 		Address: map[string]string{
