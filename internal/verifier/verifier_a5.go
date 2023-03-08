@@ -95,8 +95,8 @@ func (v A5Verifier) BuildParams(rows [][]string) (any, error) {
 	if param[3] == chain.ChainIdValueJuno {
 		chainAbbr = chain.ChainIdAbbreviationJuno
 	}
-	if param[3] == chain.ChainIdAbbreviationStars {
-		chainAbbr = chain.ChainIdAbbreviationJuno
+	if param[3] == chain.ChainIdValueStars {
+		chainAbbr = chain.ChainIdAbbreviationStars
 	}
 
 	return A5Params{

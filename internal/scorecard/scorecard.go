@@ -74,7 +74,7 @@ func (sc *ScoreCard) Generate() error {
 			return entries[i].teamName < entries[j].teamName
 		}
 
-		return entries[i].totalPoint < entries[j].totalPoint
+		return entries[i].totalPoint > entries[j].totalPoint
 	})
 
 	for i := 0; i < len(entries); i++ {
@@ -123,9 +123,11 @@ func (sc *ScoreCard) HandleTaskPoint(taskPointFile string) (*ScoreCardEntry, err
 
 func (sc *ScoreCard) concatenateTaskNo(taskResults TaskResults) string {
 	sort.Sort(taskResults)
-	taskNos := make([]string, len(taskResults))
+	taskNos := make([]string, 0)
 	for i := 0; i < len(taskResults); i++ {
-		taskNos[i] = taskResults[i].TaskNo
+		if taskResults[i].Point != 0 {
+			taskNos = append(taskNos, taskResults[i].TaskNo)
+		}
 	}
 
 	return strings.Join(taskNos, ",")

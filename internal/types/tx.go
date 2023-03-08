@@ -139,8 +139,8 @@ func (tx *TxResponse) IbcNftPkg() (any, error) {
 	}
 
 	return TxResultIbcNft{
-		Sender:   tx.EventAttributeValueByKey(EventTypeIbcSendPacket, AttributeKeySender),
-		Receiver: tx.EventAttributeValueByKey(EventTypeIbcSendPacket, AttributeKeyReceiver),
+		Sender:   ibcPkg.Sender,
+		Receiver: ibcPkg.Receiver,
 		DestPort: tx.EventAttributeValueByKey(EventTypeIbcSendPacket, AttributeKeyDestPort),
 		DestChan: tx.EventAttributeValueByKey(EventTypeIbcSendPacket, AttributeKeyDestChan),
 		ClassId:  ibcPkg.ClassId,

@@ -50,7 +50,7 @@ func (v A1Verifier) Do(req Request, res chan<- *Response) {
 		res <- result
 		return
 	}
-	tx, ok := txi.(types.TxResultBasic)
+	tx, ok := txi.(types.TxResultIssueDenom)
 	if !ok {
 		result.Reason = ReasonTxResultUnexpected
 		res <- result

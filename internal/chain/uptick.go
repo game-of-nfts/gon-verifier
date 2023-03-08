@@ -50,7 +50,6 @@ func (u Uptick) GetTx(txHash, txType string) (any, error) {
 		fmt.Printf("Error reading response body: %s\n", err.Error())
 		return nil, err
 	}
-	fmt.Println(string(body))
 
 	var data types.TxResponse
 	if err := json.Unmarshal(body, &data); err != nil {

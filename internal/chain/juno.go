@@ -38,7 +38,6 @@ func (j Juno) GetTx(txHash, txType string) (any, error) {
 
 	resp, err := http.Get(url)
 	if err != nil {
-		fmt.Printf("Error sending HTTP request: %s\n", err.Error())
 		return nil, err
 	}
 	defer resp.Body.Close()
@@ -46,15 +45,11 @@ func (j Juno) GetTx(txHash, txType string) (any, error) {
 	// Read the response body
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		// Handle the error
-		fmt.Printf("Error reading response body: %s\n", err.Error())
 		return nil, err
 	}
 
 	var data types.TxResponse
 	if err := json.Unmarshal(body, &data); err != nil {
-		// Handle the error
-		fmt.Printf("Error unmarshalling JSON: %s\n", err.Error())
 		return nil, err
 	}
 
