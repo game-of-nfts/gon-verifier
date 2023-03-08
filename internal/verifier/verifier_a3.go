@@ -51,19 +51,13 @@ func (v A3Verifier) Do(req Request, res chan<- *Response) {
 	}
 
 	destChain := v.r.GetChain(params.ChainAbbreviation)
-	nft, err := destChain.GetNFT(params.ClassID, params.NFTID)
-	if err != nil {
-		result.Reason = err.Error()
+	if ok := destChain.HasClass(params.ClassID); !ok {
+		result.Reason = ReasonClassNotFound
 		res <- result
 		return
 	}
 
-	// FIXME: if A5 completed, owner is zero. if not, owner is sender.
-	if nft.Owner != req.User.Address[params.ChainAbbreviation] || len(nft.Owner) != 0 {
-		result.Reason = ReasonNFTOwnerNotMatch
-		res <- result
-		return
-	}
+	// FIXME! from tx we match sender and receiver to the user info.
 
 	result.Point = PointMap[req.TaskNo]
 	res <- result

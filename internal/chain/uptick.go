@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	nfttypes "github.com/UptickNetwork/uptick/x/collection/types"
+	"github.com/taramakage/gon-verifier/internal/types"
 	"google.golang.org/grpc"
 	"io/ioutil"
 	"net/http"
@@ -31,7 +32,7 @@ func NewUptick() *Uptick {
 	}
 }
 
-func (u Uptick) GetTx(txHash string) (*TxResult, error) {
+func (u Uptick) GetTx(txHash, txType string) (any, error) {
 	txHash = "0x" + txHash
 	url := fmt.Sprintf(ChainRPCUptick+"tx?hash=%s&prove=true", txHash)
 
@@ -49,15 +50,26 @@ func (u Uptick) GetTx(txHash string) (*TxResult, error) {
 		fmt.Printf("Error reading response body: %s\n", err.Error())
 		return nil, err
 	}
+	fmt.Println(string(body))
 
-	var data TxResultHttp
+	var data types.TxResponse
 	if err := json.Unmarshal(body, &data); err != nil {
 		// Handle the error
 		fmt.Printf("Error unmarshalling JSON: %s\n", err.Error())
 		return nil, err
 	}
 
-	return GetTxResult(&data), nil
+	switch txType {
+	case types.TxResultTypeIbcNft:
+		return u.getTxResultIbcNft(&data)
+	}
+
+	return nil, fmt.Errorf("unknown tx type: %s", txType)
+}
+
+func (u Uptick) getTxResultIbcNft(data *types.TxResponse) (any, error) {
+	// TODO: Implement this
+	return nil, nil
 }
 
 func (u Uptick) GetNFT(classID, nftID string) (*NFT, error) {

@@ -4,7 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	wasmtype "github.com/taramakage/gon-verifier/x/wasm/types"
+	"github.com/taramakage/gon-verifier/internal/types"
+	wasmtype "github.com/taramakage/gon-verifier/internal/types/wasm"
 	"google.golang.org/grpc"
 	"io/ioutil"
 	"net/http"
@@ -31,7 +32,7 @@ func NewJuno() *Juno {
 	}
 }
 
-func (Juno) GetTx(txHash string) (*TxResult, error) {
+func (j Juno) GetTx(txHash, txType string) (any, error) {
 	txHash = "0x" + txHash
 	url := fmt.Sprintf(ChainRPCJuno+"tx?hash=%s&prove=true", txHash)
 
@@ -50,15 +51,26 @@ func (Juno) GetTx(txHash string) (*TxResult, error) {
 		return nil, err
 	}
 
-	var data TxResultHttp
+	var data types.TxResponse
 	if err := json.Unmarshal(body, &data); err != nil {
 		// Handle the error
 		fmt.Printf("Error unmarshalling JSON: %s\n", err.Error())
 		return nil, err
 	}
 
-	return GetTxResult(&data), nil
+	switch txType {
+	case types.TxResultTypeIbcNft:
+		return j.getTxResultIbcNft(&data)
+	}
+
+	return nil, fmt.Errorf("unknown tx type: %s", txType)
 }
+
+func (j Juno) getTxResultIbcNft(data *types.TxResponse) (*types.TxResultIbcNft, error) {
+	// TODO: Implement this
+	return nil, nil
+}
+
 func (j Juno) GetNFT(classID, nftID string) (*NFT, error) {
 	wq := WasmQueryNFT{
 		NftInfo: NftInfo{nftID},

@@ -1,6 +1,10 @@
 .idea
 .vscode
+
 test
+example
+
 internal/chain/*_test.go
 internal/verifier/*_test.go
-internal/verify_test.go
+internal/types/*_test.go
+internal/*_test.go

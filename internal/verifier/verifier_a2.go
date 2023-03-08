@@ -3,6 +3,7 @@ package verifier
 import (
 	"errors"
 	"github.com/taramakage/gon-verifier/internal/chain"
+	"github.com/taramakage/gon-verifier/internal/types"
 )
 
 type A2Params struct {
@@ -22,56 +23,82 @@ func (v A2Verifier) Do(req Request, res chan<- *Response) {
 		TeamName: req.User.TeamName,
 	}
 
+	// params validation
 	params, ok := req.Params.(A2Params)
 	if !ok {
-		result.Reason = ReasonIllegalParams
+		result.Reason = ReasonParamsFormatIncorrect
 		res <- result
 		return
 	}
 
 	if len(params.ChainAbbreviation) == 0 {
-		result.Reason = ReasonChainIDEmpty
+		result.Reason = ReasonParamsChainIdEmpty
 		res <- result
 		return
 	}
 
-	chain := v.r.GetChain(params.ChainAbbreviation)
+	// a2 validation
+	c := v.r.GetChain(params.ChainAbbreviation)
 	for i := range params.TxHash {
-		tx, err := chain.GetTx(params.TxHash[i])
+		txi, err := c.GetTx(params.TxHash[i], types.TxResultTypeMintNft)
 		if err != nil {
-			result.Reason = err.Error()
+			result.Reason = ReasonTxResultUnachievable
+			res <- result
+			return
+		}
+		tx, ok := txi.(types.TxResultMintNft)
+		if !ok {
+			result.Reason = ReasonTxResultUnexpected
+			res <- result
+			return
+		}
+		if tx.TxCode != 0 {
+			result.Reason = ReasonTxResultUnsuccessful
+			res <- result
+			return
+		}
+
+		// class owner must be the same as register address on iris
+		class, err := c.GetClass(params.ClassID[i])
+		if err != nil {
+			result.Reason = ReasonClassNotFound
+			res <- result
+			return
+		}
+		if req.User.Address[params.ChainAbbreviation] != class.Creator {
+			result.Reason = ReasonClassCreatorNotMatch
 			res <- result
 			return
 		}
 
 		if req.User.Address[params.ChainAbbreviation] != tx.Sender {
-			result.Reason = ReasonSenderNotMatch
+			result.Reason = ReasonTxMsgSenderNotMatch
 			res <- result
 			return
 		}
 
-		nft, err := chain.GetNFT(params.ClassID[i], params.NFTID[i])
+		if req.User.Address[params.ChainAbbreviation] != tx.Recipient {
+			result.Reason = ReasonNftOwnerNotMatch
+			res <- result
+			return
+		}
+
+		// query nft on chain
+		nft, err := c.GetNFT(params.ClassID[i], params.NFTID[i])
 		if err != nil {
-			result.Reason = err.Error()
-			res <- result
-			return
-		}
-
-		// FIXME: add escrow address logic
-		if nft.Owner != req.User.Address[params.ChainAbbreviation] {
-			result.Reason = ReasonNFTOwnerNotMatch
+			result.Reason = ReasonNftNotFound
 			res <- result
 			return
 		}
 
 		if len(nft.URI) == 0 {
-			result.Reason = ReasonNFTURIEmpty
+			result.Reason = ReasonNftUriEmpty
 			res <- result
 			return
 		}
 
 		if len(nft.Data) == 0 {
-			result.Reason = ReasonNFTDataEmpty
+			result.Reason = ReasonNftDataEmpty
 			res <- result
 			return
 		}

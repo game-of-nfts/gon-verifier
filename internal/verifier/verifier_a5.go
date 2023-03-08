@@ -50,14 +50,16 @@ func (v A5Verifier) Do(req Request, res chan<- *Response) {
 		return
 	}
 
-	if !srcChain.HasClass(params.ChainID) {
+	// FIXME: receiver must be the iris addr
+
+	if !srcChain.HasClass(params.ClassID) {
 		result.Reason = ReasonClassNotFound
 		res <- result
 		return
 	}
 
 	// FIXME: check original class on iris
-	originalClassID := "FIXME!!!!"
+	originalClassID := ""
 	iris := v.r.GetChain(chain.ChainIdAbbreviationIris)
 	nft, err := iris.GetNFT(originalClassID, params.NFTID)
 	if err != nil {

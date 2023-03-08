@@ -5,15 +5,18 @@ import (
 	"encoding/json"
 	"fmt"
 	nfttypes "github.com/irisnet/irismod/modules/nft/types"
+	"github.com/taramakage/gon-verifier/internal/types"
 	"google.golang.org/grpc"
 	"io/ioutil"
 	"net/http"
 )
 
-type Iris struct {
-	conn      *grpc.ClientConn
-	nftClient nfttypes.QueryClient
-}
+type (
+	Iris struct {
+		conn      *grpc.ClientConn
+		nftClient nfttypes.QueryClient
+	}
+)
 
 func NewIris() *Iris {
 	conn, err := grpc.Dial(
@@ -31,33 +34,83 @@ func NewIris() *Iris {
 	}
 }
 
-func (i Iris) GetTx(txHash string) (*TxResult, error) {
+// GetTx returns the transaction result
+func (i Iris) GetTx(txHash, txType string) (any, error) {
 	txHash = "0x" + txHash
 	url := fmt.Sprintf(ChainRPCIris+"tx?hash=%s&prove=true", txHash)
 
 	resp, err := http.Get(url)
 	if err != nil {
-		fmt.Printf("Error sending HTTP request: %s\n", err.Error())
 		return nil, err
 	}
 	defer resp.Body.Close()
 
-	// Read the response body
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		// Handle the error
-		fmt.Printf("Error reading response body: %s\n", err.Error())
 		return nil, err
 	}
 
-	var data TxResultHttp
+	var data types.TxResponse
 	if err := json.Unmarshal(body, &data); err != nil {
-		// Handle the error
-		fmt.Printf("Error unmarshalling JSON: %s\n", err.Error())
 		return nil, err
 	}
 
-	return GetTxResult(&data), nil
+	switch txType {
+	case types.TxResultTypeBasic:
+		return i.getTxResultBasic(&data)
+	case types.TxResultTypeIssueDenom:
+		return i.getTxResultIssueDenom(&data)
+	case types.TxResultTypeMintNft:
+		return i.getTxResultMintNft(&data)
+	case types.TxResultTypeIbcNft:
+		return i.getTxResultIbcNft(&data)
+	}
+
+	return nil, fmt.Errorf("unknown tx type: %s", txType)
+}
+
+func (i Iris) getTxResultBasic(data *types.TxResponse) (any, error) {
+	return types.TxResultBasic{
+		Sender: data.AttributeValueByKey(types.AttributeMsgSender),
+		TxCode: data.Result.TxResult.Code,
+	}, nil
+}
+
+func (i Iris) getTxResultIssueDenom(data *types.TxResponse) (any, error) {
+	return types.TxResultIssueDenom{
+		Sender:  data.AttributeValueByKey(types.AttributeMsgSender),
+		Creator: data.EventAttributeValueByKey(types.EventTypeIssueDenom, types.AttributeDenomCreator),
+		DenomId: data.EventAttributeValueByKey(types.EventTypeIssueDenom, types.AttributeDenomId),
+		TxCode:  data.Result.TxResult.Code,
+	}, nil
+}
+
+func (i Iris) getTxResultMintNft(data *types.TxResponse) (any, error) {
+	return types.TxResultMintNft{
+		Sender:    data.AttributeValueByKey(types.AttributeMsgSender),
+		DenomId:   data.EventAttributeValueByKey(types.EventTypeNftMint, types.AttributeDenomId),
+		TokenId:   data.EventAttributeValueByKey(types.EventTypeNftMint, types.AttributeKeyTokenId),
+		Recipient: data.EventAttributeValueByKey(types.EventTypeNftMint, types.AttributeKeyRecipient),
+		TxCode:    data.Result.TxResult.Code,
+	}, nil
+}
+
+func (i Iris) getTxResultIbcNft(data *types.TxResponse) (any, error) {
+	ibcPkgRaw := data.EventAttributeValueByKey(types.EventTypeIbcSendPacket, types.AttributeKeyIbcPackageData)
+	var ibcPkg types.IbcNftPacket
+	err := json.Unmarshal([]byte(ibcPkgRaw), &ibcPkg)
+	if err != nil {
+		return nil, err
+	}
+
+	return types.TxResultIbcNft{
+		Sender:   data.EventAttributeValueByKey(types.EventTypeIbcNftTransfer, types.AttributeKeySender),
+		Receiver: data.EventAttributeValueByKey(types.EventTypeIbcNftTransfer, types.AttributeKeySender),
+		DestPort: data.EventAttributeValueByKey(types.EventTypeIbcSendPacket, types.AttributeKeyDestPort),
+		DestChan: data.EventAttributeValueByKey(types.EventTypeIbcSendPacket, types.AttributeKeyDestChan),
+		TokenId:  ibcPkg.TokenIds[0],
+		TxCode:   data.Result.TxResult.Code,
+	}, nil
 }
 
 func (i Iris) GetNFT(classID, nftID string) (*NFT, error) {

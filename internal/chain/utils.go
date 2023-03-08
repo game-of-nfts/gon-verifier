@@ -1,7 +1,5 @@
 package chain
 
-import "encoding/base64"
-
 type WasmQueryNFT struct {
 	NftInfo NftInfo `json:"nft_info"`
 }
@@ -20,22 +18,4 @@ type NumTokens struct {
 
 type WasmRespClass struct {
 	Count int `json:"count"`
-}
-
-// TODO: event.Type = message, ibc_nft_transfer,wasm, etc.
-func GetTxResult(data *TxResultHttp) *TxResult {
-	txResult := TxResult{}
-	for _, event := range data.Result.TxResult.Events {
-		if event.Type == "message" {
-			for _, attr := range event.Attributes {
-				key, _ := base64.StdEncoding.DecodeString(attr.Key)
-				if string(key) == "sender" {
-					value, _ := base64.StdEncoding.DecodeString(attr.Value)
-					txResult.Sender = string(value)
-					return &txResult
-				}
-			}
-		}
-	}
-	return nil
 }

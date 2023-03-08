@@ -1,4 +1,4 @@
-package types
+package wasm
 
 type RawContractMessage []byte
 

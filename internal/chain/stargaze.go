@@ -4,7 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	wasmtype "github.com/taramakage/gon-verifier/x/wasm/types"
+	"github.com/taramakage/gon-verifier/internal/types"
+	wasmtype "github.com/taramakage/gon-verifier/internal/types/wasm"
 	"google.golang.org/grpc"
 	"io/ioutil"
 	"net/http"
@@ -31,7 +32,7 @@ func NewStargaze() *Stargaze {
 	}
 }
 
-func (Stargaze) GetTx(txHash string) (*TxResult, error) {
+func (s Stargaze) GetTx(txHash, txType string) (any, error) {
 	txHash = "0x" + txHash
 	url := fmt.Sprintf(ChainRPCStars+"tx?hash=%s&prove=true", txHash)
 
@@ -50,15 +51,26 @@ func (Stargaze) GetTx(txHash string) (*TxResult, error) {
 		return nil, err
 	}
 
-	var data TxResultHttp
+	var data types.TxResponse
 	if err := json.Unmarshal(body, &data); err != nil {
 		// Handle the error
 		fmt.Printf("Error unmarshalling JSON: %s\n", err.Error())
 		return nil, err
 	}
 
-	return GetTxResult(&data), nil
+	switch txType {
+	case types.TxResultTypeIbcNft:
+		return s.getTxResultIbcNft(&data)
+	}
+
+	return nil, fmt.Errorf("unknown tx type: %s", txType)
 }
+
+func (s Stargaze) getTxResultIbcNft(data *types.TxResponse) (*types.TxResultIbcNft, error) {
+	// TODO: Implement this
+	return nil, nil
+}
+
 func (s Stargaze) GetNFT(classID, nftID string) (*NFT, error) {
 	wq := WasmQueryNFT{
 		NftInfo: NftInfo{nftID},

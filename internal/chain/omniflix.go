@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	nfttypes "github.com/OmniFlix/onft/types"
+	"github.com/taramakage/gon-verifier/internal/types"
 	"google.golang.org/grpc"
 	"io/ioutil"
 	"net/http"
@@ -31,7 +32,7 @@ func NewOmniflix() *Omniflix {
 	}
 }
 
-func (o Omniflix) GetTx(txHash string) (*TxResult, error) {
+func (o Omniflix) GetTx(txHash, txType string) (any, error) {
 	txHash = "0x" + txHash
 	url := fmt.Sprintf(ChainRPCOmnilfix+"tx?hash=%s&prove=true", txHash)
 
@@ -42,22 +43,29 @@ func (o Omniflix) GetTx(txHash string) (*TxResult, error) {
 	}
 	defer resp.Body.Close()
 
-	// Read the response body
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		// Handle the error
 		fmt.Printf("Error reading response body: %s\n", err.Error())
 		return nil, err
 	}
 
-	var data TxResultHttp
+	var data types.TxResponse
 	if err := json.Unmarshal(body, &data); err != nil {
-		// Handle the error
 		fmt.Printf("Error unmarshalling JSON: %s\n", err.Error())
 		return nil, err
 	}
 
-	return GetTxResult(&data), nil
+	switch txType {
+	case types.TxResultTypeIbcNft:
+		return o.getTxResultIbcNft(&data)
+	}
+
+	return nil, fmt.Errorf("unknown tx type: %s", txType)
+}
+
+func (o Omniflix) getTxResultIbcNft(data *types.TxResponse) (any, error) {
+	// TODO: Implement this
+	return nil, nil
 }
 
 func (o Omniflix) GetNFT(classID, nftID string) (*NFT, error) {

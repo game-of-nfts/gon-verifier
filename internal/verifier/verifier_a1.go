@@ -1,9 +1,10 @@
 package verifier
 
 import (
+	"encoding/json"
 	"errors"
-
 	"github.com/taramakage/gon-verifier/internal/chain"
+	"github.com/taramakage/gon-verifier/internal/types"
 )
 
 type A1Params struct {
@@ -16,61 +17,82 @@ type A1Verifier struct {
 	r *chain.Registry
 }
 
+type A1ClassData struct {
+	GithubUsername string `json:"github_username"`
+	DiscordHandle  string `json:"discord_handle,omitempty"`
+	TeamName       string `json:"team_name,omitempty"`
+	Community      string `json:"community,omitempty"`
+}
+
 func (v A1Verifier) Do(req Request, res chan<- *Response) {
 	result := &Response{
 		TaskNo:   req.TaskNo,
 		TeamName: req.User.TeamName,
 	}
 
+	// params validation
 	params, ok := req.Params.(A1Params)
 	if !ok {
-		result.Reason = ReasonIllegalParams
+		result.Reason = ReasonParamsFormatIncorrect
 		res <- result
 		return
 	}
 
 	if len(params.TxHash) == 0 {
-		result.Reason = ReasonTxHashEmpty
+		result.Reason = ReasonParamsChainIdEmpty
 		res <- result
 		return
 	}
 
-	chain := v.r.GetChain(params.ChainAbbreviation)
-	tx, err := chain.GetTx(params.TxHash)
+	c := v.r.GetChain(params.ChainAbbreviation)
+	txi, err := c.GetTx(params.TxHash, types.TxResultTypeIssueDenom)
 	if err != nil {
-		result.Reason = err.Error()
+		result.Reason = ReasonTxResultUnachievable
+		res <- result
+		return
+	}
+	tx, ok := txi.(types.TxResultBasic)
+	if !ok {
+		result.Reason = ReasonTxResultUnexpected
+		res <- result
+		return
+	}
+	if tx.TxCode != 0 {
+		result.Reason = ReasonTxResultUnsuccessful
 		res <- result
 		return
 	}
 
 	if req.User.Address[params.ChainAbbreviation] != tx.Sender {
-		result.Reason = ReasonSenderNotMatch
+		result.Reason = ReasonTxMsgSenderNotMatch
 		res <- result
 		return
 	}
 
-	class, err := chain.GetClass(params.ClassID)
+	// query class on chain
+	class, err := c.GetClass(params.ClassID)
 	if err != nil {
-		result.Reason = err.Error()
+		result.Reason = ReasonClassNotFound
 		res <- result
 		return
 	}
 
-	if class.Creator != req.User.Address[params.ChainAbbreviation] {
+	if req.User.Address[params.ChainAbbreviation] != class.Creator {
 		result.Reason = ReasonClassCreatorNotMatch
 		res <- result
 		return
 	}
 
 	if len(class.Uri) == 0 {
-		result.Reason = ReasonClassURIEmpty
+		result.Reason = ReasonClassUrIEmpty
 		res <- result
 		return
 	}
 
-	// TODO: validate class data content.
-	if len(class.Data) == 0 {
-		result.Reason = ReasonClassDataEmpty
+	var classData A1ClassData
+	err = json.Unmarshal([]byte(class.Data), &classData)
+	if err != nil {
+		result.Reason = ReasonClassDataInvalid
 		res <- result
 		return
 	}
@@ -80,9 +102,8 @@ func (v A1Verifier) Do(req Request, res chan<- *Response) {
 }
 
 func (v A1Verifier) BuildParams(rows [][]string) (any, error) {
-	// FIXME: only the first row is read
-	if len(rows) != 1 {
-		return nil, errors.New("非法的格式，只能提交一行数据")
+	if len(rows) < 1 {
+		return nil, errors.New("format is incorrect")
 	}
 	rowFirst := rows[0]
 	return A1Params{
