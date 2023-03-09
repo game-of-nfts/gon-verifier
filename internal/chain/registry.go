@@ -52,6 +52,7 @@ type (
 		HasNFT(classID, nftID string) bool
 		GetClass(classID string) (*Class, error)
 		HasClass(classID string) bool
+		Close()
 	}
 
 	Registry struct {
@@ -73,4 +74,8 @@ func NewRegistry() *Registry {
 
 func (cr *Registry) GetChain(chainID string) Chain {
 	return cr.chains[chainID]
+}
+
+func (cr *Registry) GetChains() map[string]Chain {
+	return cr.chains
 }

@@ -30,7 +30,7 @@ func NewStargaze() *Stargaze {
 	}
 }
 
-func (s Stargaze) GetTx(txHash, txType string) (any, error) {
+func (s *Stargaze) GetTx(txHash, txType string) (any, error) {
 	txHash = "0x" + txHash
 	url := fmt.Sprintf(ChainRPCStars+"tx?hash=%s&prove=true", txHash)
 	body, err := getRespWithRetry(url)
@@ -51,11 +51,11 @@ func (s Stargaze) GetTx(txHash, txType string) (any, error) {
 	return nil, fmt.Errorf("unknown tx type: %s", txType)
 }
 
-func (s Stargaze) getTxResultIbcNft(data *types.TxResponse) (any, error) {
+func (s *Stargaze) getTxResultIbcNft(data *types.TxResponse) (any, error) {
 	return data.IbcNftPkg()
 }
 
-func (s Stargaze) GetNFT(classID, nftID string) (*NFT, error) {
+func (s *Stargaze) GetNFT(classID, nftID string) (*NFT, error) {
 	wq := WasmQueryNFT{
 		NftInfo: NftInfo{nftID},
 	}
@@ -69,8 +69,14 @@ func (s Stargaze) GetNFT(classID, nftID string) (*NFT, error) {
 		Address:   classID,
 		QueryData: bz,
 	}
-	_, err = s.wasmClient.SmartContractState(context.Background(), req)
+	resi, err := withGrpcRetry(func() (interface{}, error) {
+		return s.wasmClient.SmartContractState(context.Background(), req)
+	})
 	if err != nil {
+		return nil, err
+	}
+	_, ok := resi.(*wasmtype.QuerySmartContractStateResponse)
+	if !ok {
 		return nil, err
 	}
 
@@ -79,7 +85,7 @@ func (s Stargaze) GetNFT(classID, nftID string) (*NFT, error) {
 	}, nil
 }
 
-func (s Stargaze) HasNFT(classID, nftID string) bool {
+func (s *Stargaze) HasNFT(classID, nftID string) bool {
 	_, err := s.GetNFT(classID, nftID)
 	if err != nil {
 		return false
@@ -87,7 +93,7 @@ func (s Stargaze) HasNFT(classID, nftID string) bool {
 	return true
 }
 
-func (s Stargaze) GetClass(classID string) (*Class, error) {
+func (s *Stargaze) GetClass(classID string) (*Class, error) {
 	wq := WasmQueryClass{}
 	// convert wq to json string
 	bz, err := json.Marshal(wq)
@@ -99,9 +105,14 @@ func (s Stargaze) GetClass(classID string) (*Class, error) {
 		Address:   classID,
 		QueryData: bz,
 	}
-	res, err := s.wasmClient.SmartContractState(context.Background(), req)
-	fmt.Println(res)
+	resi, err := withGrpcRetry(func() (interface{}, error) {
+		return s.wasmClient.SmartContractState(context.Background(), req)
+	})
 	if err != nil {
+		return nil, err
+	}
+	res, ok := resi.(*wasmtype.QuerySmartContractStateResponse)
+	if !ok {
 		return nil, err
 	}
 
@@ -114,10 +125,16 @@ func (s Stargaze) GetClass(classID string) (*Class, error) {
 	return &Class{}, nil
 }
 
-func (s Stargaze) HasClass(classID string) bool {
+func (s *Stargaze) HasClass(classID string) bool {
 	_, err := s.GetClass(classID)
 	if err != nil {
 		return false
 	}
 	return true
+}
+
+func (s *Stargaze) Close() {
+	if s.conn != nil {
+		s.conn.Close()
+	}
 }

@@ -30,7 +30,7 @@ func NewUptick() *Uptick {
 	}
 }
 
-func (u Uptick) GetTx(txHash, txType string) (any, error) {
+func (u *Uptick) GetTx(txHash, txType string) (any, error) {
 	txHash = "0x" + txHash
 	url := fmt.Sprintf(ChainRPCUptick+"tx?hash=%s&prove=true", txHash)
 	body, err := getRespWithRetry(url)
@@ -53,18 +53,24 @@ func (u Uptick) GetTx(txHash, txType string) (any, error) {
 	return nil, fmt.Errorf("unknown tx type: %s", txType)
 }
 
-func (u Uptick) getTxResultIbcNft(data *types.TxResponse) (any, error) {
+func (u *Uptick) getTxResultIbcNft(data *types.TxResponse) (any, error) {
 	return data.IbcNftPkg()
 }
 
-func (u Uptick) GetNFT(classID, nftID string) (*NFT, error) {
+func (u *Uptick) GetNFT(classID, nftID string) (*NFT, error) {
 	req := &nfttypes.QueryNFTRequest{
 		DenomId: classID,
 		TokenId: nftID,
 	}
 
-	res, err := u.nftClient.NFT(context.Background(), req)
+	resi, err := withGrpcRetry(func() (interface{}, error) {
+		return u.nftClient.NFT(context.Background(), req)
+	})
 	if err != nil {
+		return nil, err
+	}
+	res, ok := resi.(*nfttypes.QueryNFTResponse)
+	if !ok {
 		return nil, err
 	}
 
@@ -76,7 +82,7 @@ func (u Uptick) GetNFT(classID, nftID string) (*NFT, error) {
 	}, nil
 }
 
-func (u Uptick) HasNFT(classID, nftID string) bool {
+func (u *Uptick) HasNFT(classID, nftID string) bool {
 	nft, _ := u.GetNFT(classID, nftID)
 	if nft == nil {
 		return false
@@ -84,13 +90,19 @@ func (u Uptick) HasNFT(classID, nftID string) bool {
 	return true
 }
 
-func (u Uptick) GetClass(classID string) (*Class, error) {
-	req := nfttypes.QueryDenomRequest{
+func (u *Uptick) GetClass(classID string) (*Class, error) {
+	req := &nfttypes.QueryDenomRequest{
 		DenomId: classID,
 	}
 
-	res, err := u.nftClient.Denom(context.Background(), &req)
+	resi, err := withGrpcRetry(func() (interface{}, error) {
+		return u.nftClient.Denom(context.Background(), req)
+	})
 	if err != nil {
+		return nil, err
+	}
+	res, ok := resi.(*nfttypes.QueryDenomResponse)
+	if !ok {
 		return nil, err
 	}
 
@@ -105,10 +117,16 @@ func (u Uptick) GetClass(classID string) (*Class, error) {
 	}, nil
 }
 
-func (u Uptick) HasClass(classID string) bool {
+func (u *Uptick) HasClass(classID string) bool {
 	nft, _ := u.GetClass(classID)
 	if nft == nil {
 		return false
 	}
 	return true
+}
+
+func (u *Uptick) Close() {
+	if u.conn != nil {
+		u.conn.Close()
+	}
 }

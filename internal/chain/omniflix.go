@@ -30,7 +30,7 @@ func NewOmniflix() *Omniflix {
 	}
 }
 
-func (o Omniflix) GetTx(txHash, txType string) (any, error) {
+func (o *Omniflix) GetTx(txHash, txType string) (any, error) {
 	txHash = "0x" + txHash
 	url := fmt.Sprintf(ChainRPCOmnilfix+"tx?hash=%s&prove=true", txHash)
 	body, err := getRespWithRetry(url)
@@ -51,30 +51,36 @@ func (o Omniflix) GetTx(txHash, txType string) (any, error) {
 	return nil, fmt.Errorf("unknown tx type: %s", txType)
 }
 
-func (o Omniflix) getTxResultIbcNft(data *types.TxResponse) (any, error) {
+func (o *Omniflix) getTxResultIbcNft(data *types.TxResponse) (any, error) {
 	return data.IbcNftPkg()
 }
 
-func (o Omniflix) GetNFT(classID, nftID string) (*NFT, error) {
+func (o *Omniflix) GetNFT(classID, nftID string) (*NFT, error) {
 	req := &nfttypes.QueryONFTRequest{
 		DenomId: classID,
 		Id:      nftID,
 	}
 
-	res, err := o.nftClient.ONFT(context.Background(), req)
+	resi, err := withGrpcRetry(func() (interface{}, error) {
+		return o.nftClient.ONFT(context.Background(), req)
+	})
 	if err != nil {
+		return nil, err
+	}
+	res, ok := resi.(*nfttypes.QueryONFTResponse)
+	if !ok {
 		return nil, err
 	}
 
 	return &NFT{
 		ID:    res.ONFT.Id,
-		URI:   res.ONFT.Metadata.PreviewURI, // NOTE
+		URI:   res.ONFT.Metadata.PreviewURI, // NOTE: omniflix has multiple uri fields, but we only use preview uri
 		Data:  res.ONFT.Data,
 		Owner: res.ONFT.Owner,
 	}, nil
 }
 
-func (o Omniflix) HasNFT(classID, nftID string) bool {
+func (o *Omniflix) HasNFT(classID, nftID string) bool {
 	nft, _ := o.GetNFT(classID, nftID)
 	if nft == nil {
 		return false
@@ -82,13 +88,19 @@ func (o Omniflix) HasNFT(classID, nftID string) bool {
 	return true
 }
 
-func (o Omniflix) GetClass(classID string) (*Class, error) {
-	req := nfttypes.QueryDenomRequest{
+func (o *Omniflix) GetClass(classID string) (*Class, error) {
+	req := &nfttypes.QueryDenomRequest{
 		DenomId: classID,
 	}
 
-	res, err := o.nftClient.Denom(context.Background(), &req)
+	resi, err := withGrpcRetry(func() (interface{}, error) {
+		return o.nftClient.Denom(context.Background(), req)
+	})
 	if err != nil {
+		return nil, err
+	}
+	res, ok := resi.(*nfttypes.QueryDenomResponse)
+	if !ok {
 		return nil, err
 	}
 
@@ -103,10 +115,16 @@ func (o Omniflix) GetClass(classID string) (*Class, error) {
 	}, nil
 }
 
-func (o Omniflix) HasClass(classID string) bool {
+func (o *Omniflix) HasClass(classID string) bool {
 	nft, _ := o.GetClass(classID)
 	if nft == nil {
 		return false
 	}
 	return true
+}
+
+func (o *Omniflix) Close() {
+	if o.conn != nil {
+		o.conn.Close()
+	}
 }

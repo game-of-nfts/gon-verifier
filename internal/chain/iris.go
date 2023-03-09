@@ -33,7 +33,7 @@ func NewIris() *Iris {
 }
 
 // GetTx returns the transaction result
-func (i Iris) GetTx(txHash, txType string) (any, error) {
+func (i *Iris) GetTx(txHash, txType string) (any, error) {
 	txHash = "0x" + txHash
 	url := fmt.Sprintf(ChainRPCIris+"tx?hash=%s&prove=true", txHash)
 	body, err := getRespWithRetry(url)
@@ -60,14 +60,14 @@ func (i Iris) GetTx(txHash, txType string) (any, error) {
 	return nil, fmt.Errorf("unknown tx type: %s", txType)
 }
 
-func (i Iris) getTxResultBasic(data *types.TxResponse) (any, error) {
+func (i *Iris) getTxResultBasic(data *types.TxResponse) (any, error) {
 	return types.TxResultBasic{
 		Sender: data.AttributeValueByKey(types.AttributeMsgSender),
 		TxCode: data.Result.TxResult.Code,
 	}, nil
 }
 
-func (i Iris) getTxResultIssueDenom(data *types.TxResponse) (any, error) {
+func (i *Iris) getTxResultIssueDenom(data *types.TxResponse) (any, error) {
 	return types.TxResultIssueDenom{
 		Sender:  data.AttributeValueByKey(types.AttributeMsgSender),
 		Creator: data.EventAttributeValueByKey(types.EventTypeIssueDenom, types.AttributeDenomCreator),
@@ -76,7 +76,7 @@ func (i Iris) getTxResultIssueDenom(data *types.TxResponse) (any, error) {
 	}, nil
 }
 
-func (i Iris) getTxResultMintNft(data *types.TxResponse) (any, error) {
+func (i *Iris) getTxResultMintNft(data *types.TxResponse) (any, error) {
 	return types.TxResultMintNft{
 		Sender:    data.AttributeValueByKey(types.AttributeMsgSender),
 		DenomId:   data.EventAttributeValueByKey(types.EventTypeNftMint, types.AttributeDenomId),
@@ -86,18 +86,24 @@ func (i Iris) getTxResultMintNft(data *types.TxResponse) (any, error) {
 	}, nil
 }
 
-func (i Iris) getTxResultIbcNft(data *types.TxResponse) (any, error) {
+func (i *Iris) getTxResultIbcNft(data *types.TxResponse) (any, error) {
 	return data.IbcNftPkg()
 }
 
-func (i Iris) GetNFT(classID, nftID string) (*NFT, error) {
+func (i *Iris) GetNFT(classID, nftID string) (*NFT, error) {
 	req := &nfttypes.QueryNFTRequest{
 		DenomId: classID,
 		TokenId: nftID,
 	}
 
-	res, err := i.nftClient.NFT(context.Background(), req)
+	resi, err := withGrpcRetry(func() (interface{}, error) {
+		return i.nftClient.NFT(context.Background(), req)
+	})
 	if err != nil {
+		return nil, err
+	}
+	res, ok := resi.(*nfttypes.QueryNFTResponse)
+	if !ok {
 		return nil, err
 	}
 
@@ -109,7 +115,7 @@ func (i Iris) GetNFT(classID, nftID string) (*NFT, error) {
 	}, nil
 }
 
-func (i Iris) HasNFT(classID, nftID string) bool {
+func (i *Iris) HasNFT(classID, nftID string) bool {
 	nft, _ := i.GetNFT(classID, nftID)
 	if nft == nil {
 		return false
@@ -117,13 +123,19 @@ func (i Iris) HasNFT(classID, nftID string) bool {
 	return true
 }
 
-func (i Iris) GetClass(classID string) (*Class, error) {
-	req := nfttypes.QueryDenomRequest{
+func (i *Iris) GetClass(classID string) (*Class, error) {
+	req := &nfttypes.QueryDenomRequest{
 		DenomId: classID,
 	}
 
-	res, err := i.nftClient.Denom(context.Background(), &req)
+	resi, err := withGrpcRetry(func() (interface{}, error) {
+		return i.nftClient.Denom(context.Background(), req)
+	})
 	if err != nil {
+		return nil, err
+	}
+	res, ok := resi.(*nfttypes.QueryDenomResponse)
+	if !ok {
 		return nil, err
 	}
 
@@ -138,10 +150,16 @@ func (i Iris) GetClass(classID string) (*Class, error) {
 	}, nil
 }
 
-func (i Iris) HasClass(classID string) bool {
+func (i *Iris) HasClass(classID string) bool {
 	nft, _ := i.GetClass(classID)
 	if nft == nil {
 		return false
 	}
 	return true
+}
+
+func (i *Iris) Close() {
+	if i.conn != nil {
+		i.conn.Close()
+	}
 }

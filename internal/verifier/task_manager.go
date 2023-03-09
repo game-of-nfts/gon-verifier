@@ -29,6 +29,7 @@ type (
 	TaskManager struct {
 		tasks    []Task
 		user     UserInfo
+		cr       *chain.Registry
 		vr       *Registry
 		wg       *sync.WaitGroup
 		baseDir  string
@@ -39,9 +40,11 @@ type (
 )
 
 func NewTaskManager(evidenceFile string, opts *Options) (*TaskManager, error) {
+	cr := chain.NewRegistry()
 	tm := &TaskManager{
 		wg:       &sync.WaitGroup{},
-		vr:       NewRegistry(chain.NewRegistry()),
+		cr:       cr,
+		vr:       NewRegistry(cr),
 		resultCh: make(chan *Response, 10),
 		stopCh:   make(chan int),
 		saveCh:   make(chan int),
@@ -60,7 +63,7 @@ func (tm *TaskManager) Process() {
 		slog.Info("no task process")
 		return
 	}
-	slog.Info("start to verify", "TeamName: ", tm.user.TeamName, " Github:", tm.user.Github)
+	slog.Info("start to verify", "TeamName", tm.user.TeamName, " Github", tm.user.Github)
 	go tm.receive()
 	for _, task := range tm.tasks {
 		tm.wg.Add(1)
@@ -251,4 +254,10 @@ func (tm *TaskManager) handleTryRetrieveTeamName(evidenceFile string) (string, e
 		return "", err
 	}
 	return rows[len(rows)-1][0], nil
+}
+
+func (tm *TaskManager) Close() {
+	for _, v := range tm.cr.GetChains() {
+		v.Close()
+	}
 }

@@ -14,6 +14,7 @@ func NewGonVerifier(entrance string, options *Options) *GonVerifier {
 
 func (gv *GonVerifier) Verify(file string) error {
 	tm, err := NewTaskManager(file, gv.options)
+	defer tm.Close()
 	if err != nil {
 		return err
 	}
@@ -24,6 +25,3 @@ func (gv *GonVerifier) Verify(file string) error {
 
 	return nil
 }
-
-// TODO: skip some verification based on options
-// func (gv *GonVerifier) Skip() {}
