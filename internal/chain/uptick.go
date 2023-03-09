@@ -7,8 +7,6 @@ import (
 	nfttypes "github.com/UptickNetwork/uptick/x/collection/types"
 	"github.com/taramakage/gon-verifier/internal/types"
 	"google.golang.org/grpc"
-	"io/ioutil"
-	"net/http"
 )
 
 type Uptick struct {
@@ -35,19 +33,8 @@ func NewUptick() *Uptick {
 func (u Uptick) GetTx(txHash, txType string) (any, error) {
 	txHash = "0x" + txHash
 	url := fmt.Sprintf(ChainRPCUptick+"tx?hash=%s&prove=true", txHash)
-
-	resp, err := http.Get(url)
+	body, err := getRespWithRetry(url)
 	if err != nil {
-		fmt.Printf("Error sending HTTP request: %s\n", err.Error())
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	// Read the response body
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		// Handle the error
-		fmt.Printf("Error reading response body: %s\n", err.Error())
 		return nil, err
 	}
 

@@ -7,8 +7,6 @@ import (
 	nfttypes "github.com/OmniFlix/onft/types"
 	"github.com/taramakage/gon-verifier/internal/types"
 	"google.golang.org/grpc"
-	"io/ioutil"
-	"net/http"
 )
 
 type Omniflix struct {
@@ -35,14 +33,7 @@ func NewOmniflix() *Omniflix {
 func (o Omniflix) GetTx(txHash, txType string) (any, error) {
 	txHash = "0x" + txHash
 	url := fmt.Sprintf(ChainRPCOmnilfix+"tx?hash=%s&prove=true", txHash)
-
-	resp, err := http.Get(url)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := getRespWithRetry(url)
 	if err != nil {
 		return nil, err
 	}

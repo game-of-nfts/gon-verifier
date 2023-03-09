@@ -7,8 +7,6 @@ import (
 	"github.com/taramakage/gon-verifier/internal/types"
 	wasmtype "github.com/taramakage/gon-verifier/internal/types/wasm"
 	"google.golang.org/grpc"
-	"io/ioutil"
-	"net/http"
 )
 
 type Juno struct {
@@ -35,15 +33,7 @@ func NewJuno() *Juno {
 func (j Juno) GetTx(txHash, txType string) (any, error) {
 	txHash = "0x" + txHash
 	url := fmt.Sprintf(ChainRPCJuno+"tx?hash=%s&prove=true", txHash)
-
-	resp, err := http.Get(url)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	// Read the response body
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := getRespWithRetry(url)
 	if err != nil {
 		return nil, err
 	}
