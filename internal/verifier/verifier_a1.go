@@ -101,8 +101,8 @@ func (v A1Verifier) Do(req Request, res chan<- *Response) {
 }
 
 func (v A1Verifier) BuildParams(rows [][]string) (any, error) {
-	if len(rows) < 1 {
-		return nil, errors.New("format is incorrect")
+	if len(rows) != 1 {
+		return nil, errors.New("task evidence format is incorrect")
 	}
 	rowFirst := rows[0]
 	return A1Params{

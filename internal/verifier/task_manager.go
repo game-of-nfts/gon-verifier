@@ -48,6 +48,7 @@ func NewTaskManager(evidenceFile string, opts *Options) (*TaskManager, error) {
 	}
 
 	if err := tm.loadEvidence(evidenceFile, opts); err != nil {
+		_ = tm.handleInvalidTemplate(evidenceFile, err.Error())
 		return nil, err
 	}
 	return tm, nil
@@ -59,7 +60,7 @@ func (tm *TaskManager) Process() {
 		slog.Info("no task process")
 		return
 	}
-	slog.Info("start to verify", "TeamName", tm.user.TeamName)
+	slog.Info("start to verify", "TeamName: ", tm.user.TeamName, " Github:", tm.user.Github)
 	go tm.receive()
 	for _, task := range tm.tasks {
 		tm.wg.Add(1)
@@ -143,11 +144,11 @@ func (tm *TaskManager) loadEvidence(evidenceFile string, opts *Options) error {
 func (tm *TaskManager) loadUserInfo(evidence *excelize.File) error {
 	rows, err := evidence.GetRows("Info")
 	if err != nil {
-		return err
+		return errors.New("info sheet not found")
 	}
 
 	if len(rows) != 2 {
-		return errors.New("invalid evidence template")
+		return errors.New("info sheet row length invalid")
 	}
 
 	columns := rows[1]
@@ -196,4 +197,58 @@ func (tm *TaskManager) buildTask(evidence *excelize.File, opts *Options) error {
 		})
 	}
 	return nil
+}
+
+func (tm *TaskManager) handleInvalidTemplate(evidenceFile string, errMsg string) error {
+	f := excelize.NewFile()
+
+	sheetName := "result"
+	index, err := f.NewSheet(sheetName)
+	if err != nil {
+		slog.Error("NewSheet error", err)
+		return err
+	}
+
+	strs := strings.Split(evidenceFile, "/")
+	github := strs[len(strs)-2]
+	teamName, _ := tm.handleTryRetrieveTeamName(evidenceFile)
+	if len(teamName) == 0 {
+		teamName = "UnknownTeam:@" + github
+	}
+
+	rowIdx := 1
+	f.SetCellValue(sheetName, "A1", "TaskNo")
+	f.SetCellValue(sheetName, "B1", "TeamName")
+	f.SetCellValue(sheetName, "C1", "Point")
+	f.SetCellValue(sheetName, "D1", "Reason")
+
+	f.SetCellValue(sheetName, fmt.Sprintf("A%d", rowIdx+1), "(evidence format error)")
+	f.SetCellValue(sheetName, fmt.Sprintf("B%d", rowIdx+1), teamName)
+	f.SetCellValue(sheetName, fmt.Sprintf("C%d", rowIdx+1), -1)
+	f.SetCellValue(sheetName, fmt.Sprintf("D%d", rowIdx+1), errMsg)
+
+	f.SetActiveSheet(index)
+
+	fileName := filepath.Join(tm.baseDir, scorecard.DefaultTaskPointFile)
+	if err := f.SaveAs(fileName); err != nil {
+		slog.Error("Save file error", err)
+	}
+
+	if err := f.Close(); err != nil {
+		slog.Error("close file error", err)
+	}
+
+	return nil
+}
+
+func (tm *TaskManager) handleTryRetrieveTeamName(evidenceFile string) (string, error) {
+	evidence, err := excelize.OpenFile(evidenceFile)
+	if err != nil {
+		return "", err
+	}
+	rows, err := evidence.GetRows("Info")
+	if err != nil {
+		return "", err
+	}
+	return rows[len(rows)-1][0], nil
 }

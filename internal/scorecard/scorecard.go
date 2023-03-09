@@ -1,7 +1,6 @@
 package scorecard
 
 import (
-	"fmt"
 	"github.com/xuri/excelize/v2"
 	"os"
 	"path/filepath"
@@ -26,6 +25,8 @@ type ScoreCardEntry struct {
 	taskCompleted string
 	totalPoint    int
 	teamName      string
+	failedReason  string
+	githubAccount string
 }
 
 // NewScoreCard creates a new ScoreCard
@@ -44,6 +45,8 @@ func (sc *ScoreCard) Generate() error {
 	f.SetCellValue(DefaultScoreCardSheet, "C1", "task_completed")
 	f.SetCellValue(DefaultScoreCardSheet, "D1", "final_score")
 	f.SetCellValue(DefaultScoreCardSheet, "E1", "update_time")
+	f.SetCellValue(DefaultScoreCardSheet, "F1", "failed_reason")
+	f.SetCellValue(DefaultScoreCardSheet, "G1", "github_account")
 
 	var taskPointFiles []string
 	err = filepath.Walk(sc.entranceDir, func(path string, info os.FileInfo, err error) error {
@@ -63,25 +66,29 @@ func (sc *ScoreCard) Generate() error {
 	for _, taskPointFile := range taskPointFiles {
 		entry, err := sc.HandleTaskPoint(taskPointFile)
 		if err != nil {
-			fmt.Println(taskPointFiles, " ", err)
 			continue
 		}
 		entries = append(entries, entry)
 	}
 
 	sort.Slice(entries, func(i, j int) bool {
-		if entries[i].totalPoint == entries[j].totalPoint {
-			return entries[i].teamName < entries[j].teamName
+		if entries[i].totalPoint != entries[j].totalPoint {
+			return entries[i].totalPoint > entries[j].totalPoint
 		}
-
-		return entries[i].totalPoint > entries[j].totalPoint
+		return entries[i].teamName < entries[j].teamName
 	})
 
 	for i := 0; i < len(entries); i++ {
+		if entries[i] == nil {
+
+			os.Exit(1)
+		}
 		f.SetCellValue(DefaultScoreCardSheet, "A"+strconv.Itoa(i+2), i+1)
 		f.SetCellValue(DefaultScoreCardSheet, "B"+strconv.Itoa(i+2), entries[i].teamName)
 		f.SetCellValue(DefaultScoreCardSheet, "C"+strconv.Itoa(i+2), entries[i].taskCompleted)
 		f.SetCellValue(DefaultScoreCardSheet, "D"+strconv.Itoa(i+2), entries[i].totalPoint)
+		f.SetCellValue(DefaultScoreCardSheet, "F"+strconv.Itoa(i+2), entries[i].failedReason)
+		f.SetCellValue(DefaultScoreCardSheet, "G"+strconv.Itoa(i+2), entries[i].githubAccount)
 	}
 
 	f.SetActiveSheet(index)
@@ -108,16 +115,26 @@ func (sc *ScoreCard) HandleTaskPoint(taskPointFile string) (*ScoreCardEntry, err
 	var taskResults TaskResults
 	for _, row := range rows[1:] {
 		point, _ := strconv.Atoi(row[2])
+		reason := ""
+		if len(row) == 4 {
+			reason = row[3]
+		}
 		taskResults = append(taskResults, TaskResult{
 			TaskNo: row[0],
 			Point:  point,
+			Reason: reason,
 		})
 	}
+
+	strs := strings.Split(taskPointFile, "/")
+	github := strs[len(strs)-2]
 
 	return &ScoreCardEntry{
 		taskCompleted: sc.concatenateTaskNo(taskResults),
 		totalPoint:    sc.calculateTotalPoint(taskResults),
 		teamName:      rows[1][1],
+		failedReason:  sc.concatenateFailedReason(taskResults),
+		githubAccount: github,
 	}, nil
 }
 
@@ -131,6 +148,19 @@ func (sc *ScoreCard) concatenateTaskNo(taskResults TaskResults) string {
 	}
 
 	return strings.Join(taskNos, ",")
+}
+
+func (sc *ScoreCard) concatenateFailedReason(taskResults TaskResults) string {
+	// NOTE: call after concatenateTaskNo
+	failedReasons := make([]string, 0)
+	for i := 0; i < len(taskResults); i++ {
+		if len(taskResults[i].Reason) == 0 {
+			continue
+		}
+		failedReason := taskResults[i].TaskNo + ": " + taskResults[i].Reason
+		failedReasons = append(failedReasons, failedReason)
+	}
+	return strings.Join(failedReasons, " ")
 }
 
 func (sc *ScoreCard) calculateTotalPoint(taskResults TaskResults) int {

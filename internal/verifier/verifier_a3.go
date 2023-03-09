@@ -35,6 +35,11 @@ func (v A3Verifier) Do(req Request, res chan<- *Response) {
 		res <- result
 		return
 	}
+	if len(params.ChainAbbreviation) == 0 {
+		result.Reason = ReasonParamsChainIdError
+		res <- result
+		return
+	}
 
 	iris := v.r.GetChain(chain.ChainIdAbbreviationIris)
 	txi, err := iris.GetTx(params.TxHash, types.TxResultTypeIbcNft)
@@ -86,8 +91,8 @@ func (v A3Verifier) Do(req Request, res chan<- *Response) {
 }
 
 func (v A3Verifier) BuildParams(rows [][]string) (any, error) {
-	if len(rows) < 1 {
-		return nil, errors.New("format is incorrect")
+	if len(rows) != 1 {
+		return nil, errors.New("task evidence format is incorrect")
 	}
 
 	param := rows[0]

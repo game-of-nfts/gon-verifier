@@ -3,6 +3,7 @@ package scorecard
 type TaskResult struct {
 	TaskNo string
 	Point  int
+	Reason string
 }
 
 type TaskResults []TaskResult

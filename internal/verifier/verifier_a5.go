@@ -35,6 +35,11 @@ func (v A5Verifier) Do(req Request, res chan<- *Response) {
 		res <- result
 		return
 	}
+	if len(params.ChainAbbreviation) == 0 {
+		result.Reason = ReasonParamsChainIdError
+		res <- result
+		return
+	}
 
 	srcChain := v.r.GetChain(params.ChainAbbreviation)
 	txi, err := srcChain.GetTx(params.TxHash, types.TxResultTypeIbcNft)
@@ -87,7 +92,7 @@ func (v A5Verifier) Do(req Request, res chan<- *Response) {
 
 func (v A5Verifier) BuildParams(rows [][]string) (any, error) {
 	if len(rows) != 1 {
-		return nil, errors.New("rows length not match")
+		return nil, errors.New("task evidence format is incorrect")
 	}
 
 	param := rows[0]

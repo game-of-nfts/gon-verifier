@@ -17,7 +17,10 @@ func (gv *GonVerifier) Verify(file string) error {
 	if err != nil {
 		return err
 	}
-	tm.Process()
+
+	if tm != nil {
+		tm.Process()
+	}
 
 	return nil
 }

@@ -30,7 +30,6 @@ func (v A2Verifier) Do(req Request, res chan<- *Response) {
 		res <- result
 		return
 	}
-
 	if len(params.ChainAbbreviation) == 0 {
 		result.Reason = ReasonParamsChainIdEmpty
 		res <- result
@@ -110,7 +109,7 @@ func (v A2Verifier) Do(req Request, res chan<- *Response) {
 
 func (v A2Verifier) BuildParams(rows [][]string) (any, error) {
 	if len(rows) < 2 {
-		return nil, errors.New("format is incorrect")
+		return nil, errors.New("task evidence format is incorrect")
 	}
 
 	params := A2Params{
