@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/taramakage/gon-verifier/internal/chain"
 	"github.com/taramakage/gon-verifier/internal/types"
+	"strings"
 )
 
 type A5Params struct {
@@ -96,19 +97,28 @@ func (v A5Verifier) BuildParams(rows [][]string) (any, error) {
 	}
 
 	param := rows[0]
-	chainAbbr := ""
-	if param[3] == chain.ChainIdValueJuno {
-		chainAbbr = chain.ChainIdAbbreviationJuno
-	}
-	if param[3] == chain.ChainIdValueStars {
-		chainAbbr = chain.ChainIdAbbreviationStars
-	}
-
 	return A5Params{
-		ChainAbbreviation: chainAbbr,
+		ChainAbbreviation: "",
 		TxHash:            param[0],
 		ClassId:           param[1], // Wasm Contract Addr
 		TokenId:           param[2],
 		ChainId:           param[3],
-	}, nil
+	}.Trim(), nil
+}
+
+func (p A5Params) Trim() A5Params {
+	res := p
+	res.TxHash = strings.TrimSpace(res.TxHash)
+	res.ClassId = strings.TrimSpace(res.ClassId)
+	res.ClassId = strings.TrimPrefix(res.ClassId, "wasm.")
+	res.TokenId = strings.TrimSpace(res.TokenId)
+	res.ChainId = strings.TrimSpace(res.ChainId)
+
+	if res.ChainId == chain.ChainIdValueJuno {
+		res.ChainAbbreviation = chain.ChainIdAbbreviationJuno
+	}
+	if res.ChainId == chain.ChainIdValueStars {
+		res.ChainAbbreviation = chain.ChainIdAbbreviationStars
+	}
+	return res
 }

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/taramakage/gon-verifier/internal/chain"
 	"github.com/taramakage/gon-verifier/internal/types"
+	"strings"
 )
 
 type A4Params struct {
@@ -95,19 +96,28 @@ func (v A4Verifier) BuildParams(rows [][]string) (any, error) {
 	}
 
 	param := rows[0]
-	chainAbbr := ""
-	if param[3] == chain.ChainIdValueOmniflix {
-		chainAbbr = chain.ChainIdAbbreviationOmniflix
-	}
-	if param[3] == chain.ChainIdValueUptick {
-		chainAbbr = chain.ChainIdAbbreviationUptick
-	}
-
 	return A4Params{
-		ChainAbbreviation: chainAbbr,
+		ChainAbbreviation: "",
 		TxHash:            param[0],
 		ClassId:           param[1],
 		TokenId:           param[2],
 		ChainId:           param[3],
-	}, nil
+	}.Trim(), nil
+}
+
+func (p A4Params) Trim() A4Params {
+	res := p
+	res.TxHash = strings.TrimSpace(res.TxHash)
+	res.ClassId = strings.TrimSpace(res.ClassId)
+	res.TokenId = strings.TrimSpace(res.TokenId)
+	res.ChainId = strings.TrimSpace(res.ChainId)
+
+	if res.ChainId == chain.ChainIdValueOmniflix {
+		res.ChainAbbreviation = chain.ChainIdAbbreviationOmniflix
+	}
+	if res.ChainId == chain.ChainIdValueUptick {
+		res.ChainAbbreviation = chain.ChainIdAbbreviationUptick
+	}
+
+	return res
 }

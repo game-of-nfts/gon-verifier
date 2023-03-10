@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/taramakage/gon-verifier/internal/chain"
 	"github.com/taramakage/gon-verifier/internal/types"
+	"strings"
 )
 
 type A2Params struct {
@@ -130,5 +131,15 @@ func (v A2Verifier) BuildParams(rows [][]string) (any, error) {
 		params.TokenIds = append(params.TokenIds, rows[i][2])
 	}
 
-	return params, nil
+	return params.Trim(), nil
+}
+
+func (p A2Params) Trim() A2Params {
+	res := p
+	for i := range res.TxHashes {
+		res.TxHashes[i] = strings.TrimSpace(res.TxHashes[i])
+		res.ClassIds[i] = strings.TrimSpace(res.ClassIds[i])
+		res.TokenIds[i] = strings.TrimSpace(res.TokenIds[i])
+	}
+	return res
 }

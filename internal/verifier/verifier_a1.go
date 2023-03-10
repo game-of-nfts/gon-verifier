@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/taramakage/gon-verifier/internal/chain"
 	"github.com/taramakage/gon-verifier/internal/types"
+	"strings"
 )
 
 type A1Params struct {
@@ -109,5 +110,12 @@ func (v A1Verifier) BuildParams(rows [][]string) (any, error) {
 		ChainAbbreviation: chain.ChainIdAbbreviationIris,
 		TxHash:            rowFirst[0],
 		ClassId:           rowFirst[1],
-	}, nil
+	}.Trim(), nil
+}
+
+func (p A1Params) Trim() A1Params {
+	res := p
+	res.TxHash = strings.TrimSpace(res.TxHash)
+	res.ClassId = strings.TrimSpace(res.ClassId)
+	return res
 }

@@ -14,7 +14,12 @@ func NewGonVerifier(entrance string, options *Options) *GonVerifier {
 
 func (gv *GonVerifier) Verify(file string) error {
 	tm, err := NewTaskManager(file, gv.options)
-	defer tm.Close()
+	defer func() {
+		if tm != nil {
+			tm.Close()
+		}
+	}()
+
 	if err != nil {
 		return err
 	}

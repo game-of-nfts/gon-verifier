@@ -16,7 +16,7 @@ type Omniflix struct {
 
 func NewOmniflix() *Omniflix {
 	conn, err := grpc.Dial(
-		ChainGRPCIris,
+		ChainGRPCOmniflix,
 		grpc.WithInsecure(),
 		grpc.WithDefaultCallOptions(),
 	)

@@ -78,12 +78,15 @@ func (sc *ScoreCard) Generate() error {
 		return entries[i].teamName < entries[j].teamName
 	})
 
+	rank := 1
 	for i := 0; i < len(entries); i++ {
-		if entries[i] == nil {
-
-			os.Exit(1)
+		if i != 0 {
+			if entries[i].totalPoint != entries[i-1].totalPoint {
+				rank++
+			}
 		}
-		f.SetCellValue(DefaultScoreCardSheet, "A"+strconv.Itoa(i+2), i+1)
+
+		f.SetCellValue(DefaultScoreCardSheet, "A"+strconv.Itoa(i+2), rank)
 		f.SetCellValue(DefaultScoreCardSheet, "B"+strconv.Itoa(i+2), entries[i].teamName)
 		f.SetCellValue(DefaultScoreCardSheet, "C"+strconv.Itoa(i+2), entries[i].taskCompleted)
 		f.SetCellValue(DefaultScoreCardSheet, "D"+strconv.Itoa(i+2), entries[i].totalPoint)
@@ -134,7 +137,7 @@ func (sc *ScoreCard) HandleTaskPoint(taskPointFile string) (*ScoreCardEntry, err
 		totalPoint:    sc.calculateTotalPoint(taskResults),
 		teamName:      rows[1][1],
 		failedReason:  sc.concatenateFailedReason(taskResults),
-		githubAccount: github,
+		githubAccount: "@" + github,
 	}, nil
 }
 
