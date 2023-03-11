@@ -153,22 +153,15 @@ func (tm *TaskManager) loadUserInfo(evidence *excelize.File) error {
 		return errors.New("info sheet format error")
 	}
 
-	columns := rows[len(rows)-1]
+	columns := rows[1]
 	github := columns[0]
 	if len(tm.baseDir) > 0 {
 		paths := strings.Split(tm.baseDir, string(os.PathSeparator))
 		github = paths[len(paths)-1]
 	}
 
-	var community string
-	if len(rows) != 2 {
-		community = "(info set in row 3)"
-	} else if len(columns) == 8 && columns[7] != "none" {
-		community = columns[7]
-	}
-
 	tm.user = UserInfo{
-		TeamName: columns[0] + " (" + community + ")",
+		TeamName: columns[0],
 		Github:   github,
 		Address: map[string]string{
 			chain.ChainIdAbbreviationIris:     columns[1],

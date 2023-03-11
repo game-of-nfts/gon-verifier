@@ -111,8 +111,20 @@ func (sc *ScoreCard) HandleTaskPoint(taskPointFile string) (*ScoreCardEntry, err
 	}
 
 	rows, err := taskpoint.GetRows(DefaultTaskPointSheet)
-	if len(rows) <= 1 {
+	if err != nil {
 		return nil, err
+	}
+
+	strs := strings.Split(taskPointFile, "/")
+	github := strs[len(strs)-2]
+	if len(rows) == 1 {
+		return &ScoreCardEntry{
+			taskCompleted: "",
+			totalPoint:    0,
+			teamName:      "UnknownTeam:@" + github,
+			failedReason:  "all evidence formats are incorrect",
+			githubAccount: "@" + github,
+		}, nil
 	}
 
 	var taskResults TaskResults
@@ -129,13 +141,15 @@ func (sc *ScoreCard) HandleTaskPoint(taskPointFile string) (*ScoreCardEntry, err
 		})
 	}
 
-	strs := strings.Split(taskPointFile, "/")
-	github := strs[len(strs)-2]
+	teamName := rows[1][1]
+	if strings.HasPrefix(teamName, "team") {
+		teamName = "UnknownTeam:@" + github
+	}
 
 	return &ScoreCardEntry{
 		taskCompleted: sc.concatenateTaskNo(taskResults),
 		totalPoint:    sc.calculateTotalPoint(taskResults),
-		teamName:      rows[1][1],
+		teamName:      teamName,
 		failedReason:  sc.concatenateFailedReason(taskResults),
 		githubAccount: "@" + github,
 	}, nil
