@@ -2,7 +2,6 @@ package verifier
 
 import (
 	"encoding/json"
-	"errors"
 	"github.com/taramakage/gon-verifier/internal/chain"
 	"github.com/taramakage/gon-verifier/internal/types"
 	"strings"
@@ -12,6 +11,7 @@ type A1Params struct {
 	ChainAbbreviation string
 	TxHash            string
 	ClassId           string
+	ParamErrorMsg     string
 }
 
 type A1Verifier struct {
@@ -35,6 +35,11 @@ func (v A1Verifier) Do(req Request, res chan<- *Response) {
 	params, ok := req.Params.(A1Params)
 	if !ok {
 		result.Reason = ReasonParamsFormatIncorrect
+		res <- result
+		return
+	}
+	if len(params.ParamErrorMsg) != 0 {
+		result.Reason = params.ParamErrorMsg
 		res <- result
 		return
 	}
@@ -102,9 +107,13 @@ func (v A1Verifier) Do(req Request, res chan<- *Response) {
 }
 
 func (v A1Verifier) BuildParams(rows [][]string) (any, error) {
-	if len(rows) != 1 {
-		return nil, errors.New("task evidence format is incorrect")
+	errMsg := restrictParamLen(rows, 1)
+	if len(errMsg) != 0 {
+		return A1Params{
+			ParamErrorMsg: errMsg,
+		}, nil
 	}
+
 	rowFirst := rows[0]
 	return A1Params{
 		ChainAbbreviation: chain.ChainIdAbbreviationIris,

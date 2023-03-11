@@ -1,7 +1,6 @@
 package verifier
 
 import (
-	"errors"
 	"github.com/taramakage/gon-verifier/internal/chain"
 	"github.com/taramakage/gon-verifier/internal/types"
 	"strings"
@@ -13,6 +12,7 @@ type A5Params struct {
 	ClassId           string // Wasm Contract Addr
 	TokenId           string
 	ChainId           string // Dest Chain ID
+	ParamErrorMsg     string
 }
 
 type A5Verifier struct {
@@ -28,6 +28,11 @@ func (v A5Verifier) Do(req Request, res chan<- *Response) {
 	params, ok := req.Params.(A5Params)
 	if !ok {
 		result.Reason = ReasonParamsFormatIncorrect
+		res <- result
+		return
+	}
+	if len(params.ParamErrorMsg) != 0 {
+		result.Reason = params.ParamErrorMsg
 		res <- result
 		return
 	}
@@ -92,8 +97,11 @@ func (v A5Verifier) Do(req Request, res chan<- *Response) {
 }
 
 func (v A5Verifier) BuildParams(rows [][]string) (any, error) {
-	if len(rows) != 1 {
-		return nil, errors.New("task evidence format is incorrect")
+	errMsg := restrictParamLen(rows, 1)
+	if len(errMsg) != 0 {
+		return A5Params{
+			ParamErrorMsg: errMsg,
+		}, nil
 	}
 
 	param := rows[0]

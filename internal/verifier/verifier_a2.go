@@ -1,7 +1,7 @@
 package verifier
 
 import (
-	"errors"
+	"fmt"
 	"github.com/taramakage/gon-verifier/internal/chain"
 	"github.com/taramakage/gon-verifier/internal/types"
 	"strings"
@@ -12,6 +12,7 @@ type A2Params struct {
 	TxHashes          []string
 	ClassIds          []string
 	TokenIds          []string
+	ParamErrorMsg     string
 }
 
 type A2Verifier struct {
@@ -28,6 +29,11 @@ func (v A2Verifier) Do(req Request, res chan<- *Response) {
 	params, ok := req.Params.(A2Params)
 	if !ok {
 		result.Reason = ReasonParamsFormatIncorrect
+		res <- result
+		return
+	}
+	if len(params.ParamErrorMsg) != 0 {
+		result.Reason = params.ParamErrorMsg
 		res <- result
 		return
 	}
@@ -110,7 +116,13 @@ func (v A2Verifier) Do(req Request, res chan<- *Response) {
 
 func (v A2Verifier) BuildParams(rows [][]string) (any, error) {
 	if len(rows) < 2 {
-		return nil, errors.New("task evidence format is incorrect")
+		return A2Params{
+			ParamErrorMsg: fmt.Sprintf("parmas of task wanted at least 2 row(s) , but got %d row(s)", len(rows)),
+		}, nil
+	} else if strings.HasPrefix(strings.TrimSpace(rows[0][0]), "tx") {
+		return A2Params{
+			ParamErrorMsg: "row 2 should be replaced with evidence rather than left there",
+		}, nil
 	}
 
 	params := A2Params{
