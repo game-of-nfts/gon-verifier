@@ -2,7 +2,6 @@ package chain
 
 import (
 	"errors"
-	"fmt"
 	"strings"
 )
 
@@ -13,7 +12,7 @@ var PortChanPairStrMap = map[string]string{
 	"ij-2": "nft-transfer/channel-25 <> wasm.juno1stv6sk0mvku34fj2mqrlyru6683866n306mfv52tlugtl322zmks26kg7a/channel-90",
 	"iu-1": "nft-transfer/channel-17 <> nft-transfer/channel-3",
 	"iu-2": "nft-transfer/channel-19 <> nft-transfer/channel-4",
-	"io-1": "nft-transfer/channel-0 <> nft-transfer/channel-24t",
+	"io-1": "nft-transfer/channel-0 <> nft-transfer/channel-24",
 	"io-2": "nft-transfer/channel-1 <> nft-transfer/channel-25",
 	"sj-1": "wasm.stars1ve46fjrhcrum94c7d8yc2wsdz8cpuw73503e8qn9r44spr6dw0lsvmvtqh/channel-211 <> wasm.juno1stv6sk0mvku34fj2mqrlyru6683866n306mfv52tlugtl322zmks26kg7a/channel-93",
 	"sj-2": "wasm.stars1ve46fjrhcrum94c7d8yc2wsdz8cpuw73503e8qn9r44spr6dw0lsvmvtqh/channel-213 <> wasm.juno1stv6sk0mvku34fj2mqrlyru6683866n306mfv52tlugtl322zmks26kg7a/channel-94",
@@ -36,46 +35,68 @@ type PortChan struct {
 }
 
 type PortChanPair struct {
-	id  string
-	cp1 PortChan
-	cp2 PortChan
+	id   string
+	src  PortChan
+	dest PortChan
 }
 
-func NewPortChanPair(chainAbbr1, chainAbbr2, chanPairId string) (*PortChanPair, error) {
-	key := chainAbbr1 + chainAbbr2 + "-" + chanPairId
-	value := ""
+func NewPortChanPair(src, dest, chanPairId string) (*PortChanPair, error) {
+	key := src + dest + "-" + chanPairId
 	if _, ok := PortChanPairStrMap[key]; ok {
-		value = PortChanPairStrMap[key]
-	} else {
-		tmp := chainAbbr1
-		chainAbbr1 = chainAbbr2
-		chainAbbr2 = tmp
-
-		key = chainAbbr1 + chainAbbr2 + "-" + chanPairId
-		if _, ok := PortChanPairStrMap[key]; ok {
-			value = PortChanPairStrMap[key]
-		}
+		value := PortChanPairStrMap[key]
+		parts := strings.Split(value, " <> ")
+		spc := strings.Split(parts[0], "/")
+		dpc := strings.Split(parts[1], "/")
+		return &PortChanPair{
+			id: chanPairId,
+			src: PortChan{
+				ChainAbbr: src,
+				Port:      spc[0],
+				Channel:   spc[1],
+			},
+			dest: PortChan{
+				ChainAbbr: dest,
+				Port:      dpc[0],
+				Channel:   dpc[1],
+			},
+		}, nil
 	}
 
-	if len(value) == 0 {
-		return nil, errors.New(fmt.Sprintf("unknown port chain pair: %s", key))
+	keyr := dest + src + "-" + chanPairId
+	if _, ok := PortChanPairStrMap[keyr]; ok {
+		value := PortChanPairStrMap[keyr]
+		parts := strings.Split(value, " <> ")
+		dpc := strings.Split(parts[0], "/")
+		spc := strings.Split(parts[1], "/")
+		return &PortChanPair{
+			id: chanPairId,
+			src: PortChan{
+				ChainAbbr: src,
+				Port:      spc[0],
+				Channel:   spc[1],
+			},
+			dest: PortChan{
+				ChainAbbr: dest,
+				Port:      dpc[0],
+				Channel:   dpc[1],
+			},
+		}, nil
 	}
 
-	parts := strings.Split(value, " <> ")
-	pc1 := strings.Split(parts[0], "/")
-	pc2 := strings.Split(parts[1], "/")
+	return nil, errors.New("port channel pair not found")
+}
 
-	return &PortChanPair{
-		id: chanPairId,
-		cp1: PortChan{
-			chainAbbr1,
-			pc1[0],
-			pc1[1],
-		},
-		cp2: PortChan{
-			chainAbbr2,
-			pc2[0],
-			pc2[1],
-		},
-	}, nil
+func (p *PortChanPair) IsEquivalent(p2 *PortChanPair) bool {
+	if p.id == p2.id && p.src.ChainAbbr == p2.dest.ChainAbbr && p.dest.ChainAbbr == p2.src.ChainAbbr {
+		return true
+	}
+	return false
+}
+
+func (p *PortChanPair) GetSrcPortChan() PortChan {
+	return p.src
+}
+
+func (p *PortChanPair) GetDestPortChan() PortChan {
+	return p.dest
 }

@@ -21,4 +21,8 @@ const (
 	ReasonNftTokenIdNotMatch   = "NFT: token id not match"
 	ReasonNftUriEmpty          = "NFT: uri is empty"
 	ReasonNftDataEmpty         = "NFT: data is empty"
+
+	ReasonIbcDestPortNotMatch = "IBC: dest port not match"
+	ReasonIbcDestChanNotMatch = "IBC: dest channel not match"
+	ReasonIbcClassNotMatch    = "IBC: ibc class not match"
 )
