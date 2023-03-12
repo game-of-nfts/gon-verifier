@@ -154,13 +154,12 @@ func (v FlowVerifier) buildParamsNgb(rows [][]string) (any, error) {
 	}
 
 	params := FlowParams{
-		TxHashes:        nil,
-		IbcClassId:      rows[0][0],
-		OriginalClassId: "FIXME!!!!!",
-		TokenId:         rows[0][1],
-		ParamErrorMsg:   "",
+		TxHashes:      nil,
+		IbcClassId:    rows[0][0],
+		TokenId:       rows[0][1],
+		ParamErrorMsg: "",
 	}
-	return params.Trim(), nil
+	return params.Trim().AddOriginalClassId(&v), nil
 }
 
 // buildParams build params from non never-go-back transfer evidence
@@ -183,7 +182,7 @@ func (v FlowVerifier) buildParams(rows [][]string) (any, error) {
 		params.TxHashes = append(params.TxHashes, rows[i][0])
 	}
 
-	return params.Trim().AddMissedParam(&v), nil
+	return params.Trim().AddThreeKindId(&v), nil
 }
 
 func (p FlowParams) Trim() FlowParams {
@@ -196,7 +195,23 @@ func (p FlowParams) Trim() FlowParams {
 	return res
 }
 
-func (p FlowParams) AddMissedParam(v *FlowVerifier) FlowParams {
+func (p FlowParams) AddOriginalClassId(v *FlowVerifier) FlowParams {
+	irisi := v.r.GetChain(chain.ChainIdAbbreviationIris)
+	iris, ok := irisi.(*chain.Iris)
+	if !ok {
+		p.ParamErrorMsg = ReasonParamsFormatIncorrect
+		return p
+	}
+	originalClassId, err := iris.GetOriginalClassId(p.IbcClassId)
+	if err != nil {
+		p.ParamErrorMsg = ReasonIbcOriginalClassIdNotMatch
+		return p
+	}
+	p.OriginalClassId = originalClassId
+	return p
+}
+
+func (p FlowParams) AddThreeKindId(v *FlowVerifier) FlowParams {
 	// get tx result
 	srcChain := v.r.GetChain(chain.ChainIdAbbreviationIris)
 	txi, err := srcChain.GetTx(p.TxHashes[0], types.TxResultTypeIbcNft)

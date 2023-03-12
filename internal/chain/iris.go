@@ -6,13 +6,15 @@ import (
 	"fmt"
 	nfttypes "github.com/irisnet/irismod/modules/nft/types"
 	"github.com/taramakage/gon-verifier/internal/types"
+	ics721types "github.com/taramakage/gon-verifier/internal/types/ics721"
 	"google.golang.org/grpc"
 )
 
 type (
 	Iris struct {
-		conn      *grpc.ClientConn
-		nftClient nfttypes.QueryClient
+		conn         *grpc.ClientConn
+		nftClient    nfttypes.QueryClient
+		ics721Client ics721types.QueryClient
 	}
 )
 
@@ -27,8 +29,9 @@ func NewIris() *Iris {
 	}
 
 	return &Iris{
-		conn:      conn, // NOTE: Close this connection when the program exits
-		nftClient: nfttypes.NewQueryClient(conn),
+		conn:         conn, // NOTE: Close this connection when the program exits
+		nftClient:    nfttypes.NewQueryClient(conn),
+		ics721Client: ics721types.NewQueryClient(conn),
 	}
 }
 
@@ -156,6 +159,21 @@ func (i *Iris) HasClass(classID string) bool {
 		return false
 	}
 	return true
+}
+
+func (i *Iris) GetOriginalClassId(ibcClassId string) (string, error) {
+	req := &ics721types.QueryClassTraceRequest{Hash: ibcClassId}
+	resi, err := withGrpcRetry(func() (interface{}, error) {
+		return i.ics721Client.ClassTrace(context.Background(), req)
+	})
+	if err != nil {
+		return "", err
+	}
+	res, ok := resi.(*ics721types.QueryClassTraceResponse)
+	if !ok {
+		return "", err
+	}
+	return res.ClassTrace.BaseClassId, nil
 }
 
 func (i *Iris) Close() {
