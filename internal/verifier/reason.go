@@ -2,7 +2,7 @@ package verifier
 
 const (
 	ReasonParamsFormatIncorrect = "Params: format is incorrect"
-	ReasonParamsChainIdEmpty    = "Params: chainId is empty"
+	ReasonParamsChainIdEmpty    = "Params: chainId not found"
 	ReasonParamsChainIdError    = "Params: chainId is error"
 
 	ReasonTxResultUnexpected   = "Tx: result is unexpected"

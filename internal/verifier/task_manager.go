@@ -68,7 +68,7 @@ func (tm *TaskManager) Process() {
 		tm.wg.Add(1)
 		go func(task Task) {
 			defer tm.wg.Done()
-			slog.Info("verify rule", "TeamName", tm.user.TeamName, "TaskNo", task.taskNo)
+			// slog.Info("verify rule", "TeamName", tm.user.TeamName, "TaskNo", task.taskNo)
 			task.vf.Do(*&Request{
 				TaskNo: task.taskNo,
 				User:   tm.user,
@@ -124,7 +124,7 @@ func (tm *TaskManager) receive() {
 }
 
 func (tm *TaskManager) stop() {
-	slog.Info("verify finish", "TeamName", tm.user.TeamName)
+	// slog.Info("verify finish", "TeamName", tm.user.TeamName)
 	tm.stopCh <- 1
 }
 
@@ -184,6 +184,10 @@ func (tm *TaskManager) buildTask(evidence *excelize.File, opts *Options) error {
 		rowsCols, err := evidence.GetRows(taskNo)
 		if err != nil {
 			return err
+		}
+
+		if len(rowsCols) == 0 {
+			return errors.New("evidence sheet is empty")
 		}
 
 		vf := tm.vr.Get(taskNo)
