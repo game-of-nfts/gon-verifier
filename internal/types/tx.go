@@ -130,6 +130,18 @@ func (tx *TxResponse) EventAttributeValueByKey(event, key string) string {
 	return ""
 }
 
+func (tx *TxResponse) DecodeAllEventAttributes() error {
+	for _, e := range tx.Result.TxResult.Events {
+		for i := range e.Attributes {
+			key, _ := base64.StdEncoding.DecodeString(e.Attributes[i].Key)
+			val, _ := base64.StdEncoding.DecodeString(e.Attributes[i].Value)
+			e.Attributes[i].Key = string(key)
+			e.Attributes[i].Value = string(val)
+		}
+	}
+	return nil
+}
+
 func (tx *TxResponse) IbcNftPkg() (any, error) {
 	ibcPkgRaw := tx.EventAttributeValueByKey(EventTypeIbcSendPacket, AttributeKeyIbcPackageData)
 	var ibcPkg IbcNftPacket
@@ -143,7 +155,7 @@ func (tx *TxResponse) IbcNftPkg() (any, error) {
 		Receiver: ibcPkg.Receiver,
 		DestPort: tx.EventAttributeValueByKey(EventTypeIbcSendPacket, AttributeKeyDestPort),
 		DestChan: tx.EventAttributeValueByKey(EventTypeIbcSendPacket, AttributeKeyDestChan),
-		ClassId:  ibcPkg.ClassId,
+		ClassId:  ibcPkg.ClassId, // class-trace
 		TokenId:  ibcPkg.TokenIds[0],
 		TxCode:   tx.Result.TxResult.Code,
 	}, nil

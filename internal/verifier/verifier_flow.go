@@ -69,6 +69,7 @@ func (v FlowVerifier) Do(req Request, res chan<- *Response) {
 	}
 
 	result.Point = PointMap[req.TaskNo]
+	res <- result
 }
 
 // ValidateByIbcClass check the owner of nft under ibc class on last destination
@@ -85,11 +86,10 @@ func (v FlowVerifier) ValidateByIbcClass(param *FlowParams, req *Request) (bool,
 	}
 	// ibc class trace match the flow
 	hash, _ := v.f.GetFinalIbcHash(param.OriginalClassId)
-	ibc := "ibc/" + string(hash)
+	ibc := "ibc/" + hash.String()
 	if ibc != param.IbcClassId {
 		return false, ReasonIbcClassNotMatch
 	}
-
 	return true, ""
 }
 
@@ -179,7 +179,7 @@ func (v FlowVerifier) buildParams(rows [][]string) (any, error) {
 		TxHashes: make([]string, maxHop),
 	}
 	for i := range rows {
-		params.TxHashes = append(params.TxHashes, rows[i][0])
+		params.TxHashes[i] = rows[i][0]
 	}
 
 	return params.Trim().AddThreeKindId(&v), nil
@@ -232,6 +232,6 @@ func (p FlowParams) AddThreeKindId(v *FlowVerifier) FlowParams {
 	p.OriginalClassId = tx.OriginalClass()
 	// NOTE: ibc class id is not provided by user, so we need to calculate it
 	hash, _ := v.f.GetFinalIbcHash(p.OriginalClassId)
-	p.IbcClassId = "ibc/" + string(hash)
+	p.IbcClassId = "ibc/" + hash.String()
 	return p
 }

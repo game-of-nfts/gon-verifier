@@ -119,7 +119,7 @@ func (f *Flow) GetFinalIbcHash(classId string) (tmbytes.HexBytes, error) {
 		return nil, err
 	}
 	if len(classId) != 0 {
-		classId = trace + "/" + classId
+		classId = trace + classId
 	}
 	hash := sha256.Sum256([]byte(classId))
 	return hash[:], nil
@@ -144,6 +144,10 @@ func (f *Flow) GetPortChanPairByIdx(idx int) *PortChanPair {
 }
 
 // buildFinalClassTrace returns the final ibc class trace in the flow
+// (a -> b)                 p1/c1/class
+// a -> (b -> c)            p2/c2/p1/c1/class
+// a -> b -> (c -> b)       p1/c1/class
+// a -> b -> c -> (b -> d)  p3/c3/p1/c1/class
 func (f *Flow) buildFinalClassTrace() (string, error) {
 	transferTrim := make([][3]rune, 0)
 	for i, transfer := range f.transfers {
@@ -162,7 +166,7 @@ func (f *Flow) buildFinalClassTrace() (string, error) {
 	trace := ""
 	for _, t := range transferTrim {
 		pcp := f.GetPortChanPair(t)
-		trace += string(pcp.dest.Port) + "/" + string(pcp.dest.Channel) + "/"
+		trace = string(pcp.dest.Port) + "/" + string(pcp.dest.Channel) + "/" + trace
 	}
 	return trace, nil
 }
