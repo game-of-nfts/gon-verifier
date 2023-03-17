@@ -25,7 +25,7 @@ func (gv *GonVerifier) Verify(file string) error {
 	}
 
 	if tm != nil {
-		tm.Process()
+		tm.Process(gv.options)
 	}
 
 	return nil

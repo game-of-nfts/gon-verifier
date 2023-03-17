@@ -10,13 +10,14 @@ import (
 )
 
 const (
-	DefaultScoreCardFile  = "scorecard.xlsx"
-	DefaultTaskPointFile  = "taskpoint.xlsx"
-	DefaultTaskPointSheet = "result"
-	DefaultScoreCardSheet = "result"
+	DefaultScoreCardFile     = "scorecard.xlsx"
+	DefaultStageOneTaskPoint = "taskpoint1.xlsx"
+	DefaultStageTwoTaskPoint = "taskpoint2.xlsx"
+	DefaultTaskPointSheet    = "result"
+	DefaultScoreCardSheet    = "result"
 )
 
-// ScoreCard reads task results and output the scorecard
+// ScoreCard reads task results and output to the scorecard
 type ScoreCard struct {
 	entranceDir string // path: entrance
 }
@@ -48,23 +49,34 @@ func (sc *ScoreCard) Generate() error {
 	f.SetCellValue(DefaultScoreCardSheet, "F1", "failed_reason")
 	f.SetCellValue(DefaultScoreCardSheet, "G1", "github_account")
 
+	var allTaskPointFiles [][]string
 	var taskPointFiles []string
 	err = filepath.Walk(sc.entranceDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
-		if !info.IsDir() && info.Name() == DefaultTaskPointFile {
+		if !info.IsDir() && info.Name() == DefaultStageOneTaskPoint {
 			taskPointFiles = append(taskPointFiles, path)
+		}
+
+		if !info.IsDir() && info.Name() == DefaultStageTwoTaskPoint {
+			taskPointFiles = append(taskPointFiles, path)
+		}
+
+		if info.IsDir() && len(taskPointFiles) != 0 {
+			allTaskPointFiles = append(allTaskPointFiles, taskPointFiles)
+			taskPointFiles = []string{}
 		}
 		return nil
 	})
+	allTaskPointFiles = append(allTaskPointFiles, taskPointFiles)
 	if err != nil {
 		return err
 	}
 
 	var entries []*ScoreCardEntry
-	for _, taskPointFile := range taskPointFiles {
-		entry, err := sc.HandleTaskPoint(taskPointFile)
+	for _, taskPointFiles := range allTaskPointFiles {
+		entry, err := sc.HandleTaskPoint(taskPointFiles)
 		if err != nil {
 			continue
 		}
@@ -103,8 +115,68 @@ func (sc *ScoreCard) Generate() error {
 	return nil
 }
 
+// HandleTaskPoint receives taskpoint.xlsx and returns its scorecard entry
+func (sc *ScoreCard) HandleTaskPoint(taskPointFiles []string) (*ScoreCardEntry, error) {
+	var (
+		taskResults TaskResults
+		github      string
+		teamName    string
+	)
+
+	for _, taskPointFile := range taskPointFiles {
+		taskpoint, err := excelize.OpenFile(taskPointFile)
+		if err != nil {
+			return nil, err
+		}
+		defer taskpoint.Close()
+
+		rows, err := taskpoint.GetRows(DefaultTaskPointSheet)
+		if err != nil {
+			return nil, err
+		}
+
+		strs := strings.Split(taskPointFile, "/")
+		github = strs[len(strs)-2]
+		if len(rows) == 1 {
+			return &ScoreCardEntry{
+				taskCompleted: "",
+				totalPoint:    0,
+				teamName:      "UnknownTeam:@" + github,
+				failedReason:  "all evidence formats are incorrect",
+				githubAccount: "@" + github,
+			}, nil
+		}
+
+		for _, row := range rows[1:] {
+			point, _ := strconv.Atoi(row[2])
+			reason := ""
+			if len(row) == 4 {
+				reason = row[3]
+			}
+			taskResults = append(taskResults, TaskResult{
+				TaskNo: row[0],
+				Point:  point,
+				Reason: reason,
+			})
+		}
+
+		teamName = rows[1][1]
+		if strings.HasPrefix(teamName, "team") {
+			teamName = "UnknownTeam:@" + github
+		}
+	}
+
+	return &ScoreCardEntry{
+		taskCompleted: sc.concatenateTaskNo(taskResults),
+		totalPoint:    sc.calculateTotalPoint(taskResults),
+		teamName:      teamName,
+		failedReason:  sc.concatenateFailedReason(taskResults),
+		githubAccount: "@" + github,
+	}, nil
+}
+
 // HandleTaskPoint receives a taskpoint.xlsx and returns its scorecard entry
-func (sc *ScoreCard) HandleTaskPoint(taskPointFile string) (*ScoreCardEntry, error) {
+func (sc *ScoreCard) HandleTaskPointOld(taskPointFile string) (*ScoreCardEntry, error) {
 	taskpoint, err := excelize.OpenFile(taskPointFile)
 	if err != nil {
 		return nil, err

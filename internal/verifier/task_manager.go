@@ -3,7 +3,6 @@ package verifier
 import (
 	"errors"
 	"fmt"
-	"github.com/taramakage/gon-verifier/internal/scorecard"
 	"github.com/xuri/excelize/v2"
 	"os"
 	"path/filepath"
@@ -17,7 +16,8 @@ import (
 
 type (
 	Options struct {
-		TaskNos []string
+		TaskNos       []string
+		TaskPointFile string
 	}
 
 	Task struct {
@@ -57,13 +57,13 @@ func NewTaskManager(evidenceFile string, opts *Options) (*TaskManager, error) {
 }
 
 // Process concurrently verify tasks of one participant and write the result to xlsx file.
-func (tm *TaskManager) Process() {
+func (tm *TaskManager) Process(opt *Options) {
 	if len(tm.tasks) == 0 {
 		slog.Info("no task process")
 		return
 	}
 	slog.Info("start to verify", "TeamName", tm.user.TeamName, " Github", tm.user.Github)
-	go tm.receive()
+	go tm.receive(opt)
 	for _, task := range tm.tasks {
 		tm.wg.Add(1)
 		go func(task Task) {
@@ -82,7 +82,7 @@ func (tm *TaskManager) Process() {
 	return
 }
 
-func (tm *TaskManager) receive() {
+func (tm *TaskManager) receive(opt *Options) {
 	f := excelize.NewFile()
 
 	sheetName := "result"
@@ -109,7 +109,7 @@ func (tm *TaskManager) receive() {
 		case <-tm.stopCh:
 			f.SetActiveSheet(index)
 
-			fileName := filepath.Join(tm.baseDir, scorecard.DefaultTaskPointFile)
+			fileName := filepath.Join(tm.baseDir, opt.TaskPointFile)
 			if err := f.SaveAs(fileName); err != nil {
 				slog.Error("Save file error", err)
 			}
