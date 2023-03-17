@@ -10,11 +10,13 @@ import (
 )
 
 const (
-	DefaultScoreCardFile     = "scorecard.xlsx"
-	DefaultStageOneTaskPoint = "taskpoint1.xlsx"
-	DefaultStageTwoTaskPoint = "taskpoint2.xlsx"
-	DefaultTaskPointSheet    = "result"
-	DefaultScoreCardSheet    = "result"
+	DefaultScoreCardFile      = "scorecard.xlsx"
+	DefaultEvidenceFile       = "evidence.xlsx"
+	DefaultStageOneTaskPoint  = "taskpoint1.xlsx"
+	DefaultStageTwoTaskPoint  = "taskpoint2.xlsx"
+	DefaultStageTwoBTaskPoint = "taskpoint2b.xlsx"
+	DefaultTaskPointSheet     = "result"
+	DefaultScoreCardSheet     = "result"
 )
 
 // ScoreCard reads task results and output to the scorecard
@@ -60,6 +62,10 @@ func (sc *ScoreCard) Generate() error {
 		}
 
 		if !info.IsDir() && info.Name() == DefaultStageTwoTaskPoint {
+			taskPointFiles = append(taskPointFiles, path)
+		}
+
+		if !info.IsDir() && info.Name() == DefaultStageTwoBTaskPoint {
 			taskPointFiles = append(taskPointFiles, path)
 		}
 
@@ -115,7 +121,7 @@ func (sc *ScoreCard) Generate() error {
 	return nil
 }
 
-// HandleTaskPoint receives taskpoint.xlsx and returns its scorecard entry
+// HandleTaskPoint calculate the score of a stage from one's task point files
 func (sc *ScoreCard) HandleTaskPoint(taskPointFiles []string) (*ScoreCardEntry, error) {
 	var (
 		taskResults TaskResults
@@ -164,58 +170,6 @@ func (sc *ScoreCard) HandleTaskPoint(taskPointFiles []string) (*ScoreCardEntry, 
 		if strings.HasPrefix(teamName, "team") {
 			teamName = "UnknownTeam:@" + github
 		}
-	}
-
-	return &ScoreCardEntry{
-		taskCompleted: sc.concatenateTaskNo(taskResults),
-		totalPoint:    sc.calculateTotalPoint(taskResults),
-		teamName:      teamName,
-		failedReason:  sc.concatenateFailedReason(taskResults),
-		githubAccount: "@" + github,
-	}, nil
-}
-
-// HandleTaskPoint receives a taskpoint.xlsx and returns its scorecard entry
-func (sc *ScoreCard) HandleTaskPointOld(taskPointFile string) (*ScoreCardEntry, error) {
-	taskpoint, err := excelize.OpenFile(taskPointFile)
-	if err != nil {
-		return nil, err
-	}
-
-	rows, err := taskpoint.GetRows(DefaultTaskPointSheet)
-	if err != nil {
-		return nil, err
-	}
-
-	strs := strings.Split(taskPointFile, "/")
-	github := strs[len(strs)-2]
-	if len(rows) == 1 {
-		return &ScoreCardEntry{
-			taskCompleted: "",
-			totalPoint:    0,
-			teamName:      "UnknownTeam:@" + github,
-			failedReason:  "all evidence formats are incorrect",
-			githubAccount: "@" + github,
-		}, nil
-	}
-
-	var taskResults TaskResults
-	for _, row := range rows[1:] {
-		point, _ := strconv.Atoi(row[2])
-		reason := ""
-		if len(row) == 4 {
-			reason = row[3]
-		}
-		taskResults = append(taskResults, TaskResult{
-			TaskNo: row[0],
-			Point:  point,
-			Reason: reason,
-		})
-	}
-
-	teamName := rows[1][1]
-	if strings.HasPrefix(teamName, "team") {
-		teamName = "UnknownTeam:@" + github
 	}
 
 	return &ScoreCardEntry{

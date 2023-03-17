@@ -18,6 +18,7 @@ type (
 	Options struct {
 		TaskNos       []string
 		TaskPointFile string
+		Stage         int
 	}
 
 	Task struct {
@@ -44,7 +45,7 @@ func NewTaskManager(evidenceFile string, opts *Options) (*TaskManager, error) {
 	tm := &TaskManager{
 		wg:       &sync.WaitGroup{},
 		cr:       cr,
-		vr:       NewRegistry(cr),
+		vr:       NewRegistry(cr, opts.Stage),
 		resultCh: make(chan *Response, 10),
 		stopCh:   make(chan int),
 		saveCh:   make(chan int),
