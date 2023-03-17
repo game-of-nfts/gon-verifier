@@ -76,7 +76,15 @@ func (v FlowVerifier) Do(req Request, res chan<- *Response) {
 func (v FlowVerifier) ValidateByIbcClass(param *FlowParams, req *Request) (bool, string) {
 	// check nft existence
 	iris := v.r.GetChain(chain.ChainIdAbbreviationIris)
-	nft, err := iris.GetNFT(param.IbcClassId, param.TokenId)
+
+	// if the flow is backtrace style, use original instead ibc/class
+	classId := param.IbcClassId
+	ohash, _ := v.f.GetOriginalHash(param.OriginalClassId)
+	if "ibc/"+ohash.String() == param.IbcClassId {
+		classId = param.OriginalClassId
+	}
+
+	nft, err := iris.GetNFT(classId, param.TokenId)
 	if err != nil {
 		return false, ReasonNftNotFound
 	}

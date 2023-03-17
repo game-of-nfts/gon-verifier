@@ -125,6 +125,11 @@ func (f *Flow) GetFinalIbcHash(classId string) (tmbytes.HexBytes, error) {
 	return hash[:], nil
 }
 
+func (f *Flow) GetOriginalHash(classId string) (tmbytes.HexBytes, error) {
+	hash := sha256.Sum256([]byte(classId))
+	return hash[:], nil
+}
+
 // GetFinalClassTrace returns the final ibc class trace in the flow
 func (f *Flow) GetFinalClassTrace() (string, error) {
 	return f.buildFinalClassTrace()
