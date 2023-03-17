@@ -129,7 +129,7 @@ func (sc *ScoreCard) HandleTaskPoint(taskPointFiles []string) (*ScoreCardEntry, 
 		teamName    string
 	)
 
-	for _, taskPointFile := range taskPointFiles {
+	for i, taskPointFile := range taskPointFiles {
 		taskpoint, err := excelize.OpenFile(taskPointFile)
 		if err != nil {
 			return nil, err
@@ -143,7 +143,8 @@ func (sc *ScoreCard) HandleTaskPoint(taskPointFiles []string) (*ScoreCardEntry, 
 
 		strs := strings.Split(taskPointFile, "/")
 		github = strs[len(strs)-2]
-		if len(rows) == 1 {
+
+		if i == 0 && len(rows) == 1 {
 			return &ScoreCardEntry{
 				taskCompleted: "",
 				totalPoint:    0,
@@ -151,6 +152,10 @@ func (sc *ScoreCard) HandleTaskPoint(taskPointFiles []string) (*ScoreCardEntry, 
 				failedReason:  "all evidence formats are incorrect",
 				githubAccount: "@" + github,
 			}, nil
+		}
+
+		if len(rows) == 1 {
+			continue
 		}
 
 		for _, row := range rows[1:] {
