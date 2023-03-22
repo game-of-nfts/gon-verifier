@@ -5,6 +5,23 @@ type GonVerifier struct {
 	options  *Options
 }
 
+const (
+	DenomIdGonIndivRace1 = "gonIndivRace1"
+	DenomIdGonIndivRace2 = "gonIndivRace2"
+	DenomIdGonTeamRace1 = "gonTeamRace1"
+	DenomIdGonTeamRace2 = "gonTeamRace2"
+	DenomIdGonTeamRace3 = "gonTeamRace3"
+	DenomIdGonQuiz = "gonQuiz"
+
+	StartBlockHeightIndivRace1 = "473000"
+	StartBlockHeightIndivRace2 = "489000"
+	StartBlockHeightTeamRace = "568000"
+	EndBlockHeightIndivRace = "516223"
+	EndBlockHeightGame = "671700"
+
+	LastOwner = "iaa1488wwr235vka7j722hzacpk0plxw33ksqyneuz"
+)
+
 func NewGonVerifier(entrance string, options *Options) *GonVerifier {
 	return &GonVerifier{
 		entrance: entrance,

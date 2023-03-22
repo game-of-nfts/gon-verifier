@@ -12,6 +12,7 @@ type (
 		TeamName string
 		Point    int32
 		Reason   string
+		Memo     string
 	}
 
 	Verifier interface {

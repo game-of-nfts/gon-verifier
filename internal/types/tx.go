@@ -7,6 +7,7 @@ import (
 )
 
 const (
+	TxResultTypeRaw = "raw"
 	TxResultTypeBasic      = "basic"
 	TxResultTypeIssueDenom = "issue_denom"
 	TxResultTypeMintNft    = "mint_nft"
@@ -42,6 +43,28 @@ type (
 		ClassId  string
 		TokenId  string
 		TxCode   int
+	}
+
+	RaceResult struct {
+		Sender   string
+		Receiver string
+		ClassId  string
+		TokenId  string
+		Height string
+		TxCode   int
+	}
+
+	RaceData struct {
+		Type      string `json:"type,omitempty"`
+		Flow      string `json:"flow,omitempty"`
+		LastOwner string `json:"last_owner,omitempty"`
+		StartHeight string `json:"start_height,omitempty"`
+		Name     struct {
+			Value string `json:"value,omitempty"`
+		} `json:"irismod:name,omitempty"`
+		UriHash   struct {
+				Value string `json:"value,omitempty"`
+		} `json:"irismod:uri_hash,omitempty"`
 	}
 
 	IbcNftPacket struct {
@@ -159,6 +182,57 @@ func (tx *TxResponse) IbcNftPkg() (any, error) {
 		TokenId:  ibcPkg.TokenIds[0],
 		TxCode:   tx.Result.TxResult.Code,
 	}, nil
+}
+
+func (tx *TxResponse) GetFirstRace() (RaceResult, error) {
+	ibcPkgRaw := tx.EventAttributeValueByKey(EventTypeIbcSendPacket, AttributeKeyIbcPackageData)
+	var ibcPkg IbcNftPacket
+	err := json.Unmarshal([]byte(ibcPkgRaw), &ibcPkg)
+	if err != nil {
+		return RaceResult{}, err
+	}
+
+	return RaceResult{
+		Sender: ibcPkg.Sender,
+		Receiver: ibcPkg.Receiver,
+		ClassId: ibcPkg.ClassId,
+		TokenId: ibcPkg.TokenIds[0],
+		Height: tx.Result.Height,
+		TxCode: tx.Result.TxResult.Code,
+	}, err
+}
+
+func (tx *TxResponse) GetLastRace() (RaceResult, error) {
+	return RaceResult{
+		Sender:   tx.EventAttributeValueByKey(EventTypeNftTransfer, AttributeKeySender),
+		Receiver: tx.EventAttributeValueByKey(EventTypeNftTransfer, AttributeKeyRecipient),
+		ClassId:  tx.EventAttributeValueByKey(EventTypeNftTransfer, AttributeDenomId),
+		TokenId:  tx.EventAttributeValueByKey(EventTypeNftTransfer, AttributeKeyTokenId),
+		Height:   tx.Result.Height,
+		TxCode:   tx.Result.TxResult.Code,
+	}, nil
+}
+
+func (tx *TxResponse) GetIbcPkgRaceData() (RaceData, error) {
+	ibcPkgRaw := tx.EventAttributeValueByKey(EventTypeIbcSendPacket, AttributeKeyIbcPackageData)
+	var ibcPkg IbcNftPacket
+	err := json.Unmarshal([]byte(ibcPkgRaw), &ibcPkg)
+	if err != nil {
+		return RaceData{}, err
+	}
+	if len(ibcPkg.TokenData) ==  0 {
+		return RaceData{}, err
+	}
+
+	var raceData RaceData
+	tokenData := ibcPkg.TokenData[0]
+	decode, _ := base64.StdEncoding.DecodeString(tokenData)
+
+	err = json.Unmarshal(decode, &raceData)
+	if err != nil {
+		return RaceData{}, err
+	}
+	return raceData, nil
 }
 
 func (txIbc *TxResultIbcNft) OriginalClass() string {

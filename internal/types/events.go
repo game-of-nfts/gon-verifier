@@ -13,6 +13,9 @@ const (
 	AttributeKeyRecipient = "recipient"
 	// AttributeDenomId = "denom_id"
 
+	// Transfer NFT on Iris
+	EventTypeNftTransfer = "transfer_nft"
+
 	// IBC NFT Transfer
 	EventTypeIbcNftTransfer    = "ibc_nft_transfer"
 	EventTypeIbcSendPacket     = "send_packet"

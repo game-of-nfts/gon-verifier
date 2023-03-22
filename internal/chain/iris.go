@@ -50,6 +50,8 @@ func (i *Iris) GetTx(txHash, txType string) (any, error) {
 	}
 
 	switch txType {
+	case types.TxResultTypeRaw:
+		return data, nil
 	case types.TxResultTypeBasic:
 		return i.getTxResultBasic(&data)
 	case types.TxResultTypeIssueDenom:

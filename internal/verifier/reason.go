@@ -26,4 +26,9 @@ const (
 	ReasonIbcDestChanNotMatch        = "IBC: dest channel not match"
 	ReasonIbcClassNotMatch           = "IBC: ibc class not match"
 	ReasonIbcOriginalClassIdNotMatch = "IBC: original class id not match"
+
+	ReasonRaceUnexpectedFlowPath  = "Race: race flow unexpected"
+	ReasonRaceFirstLastSenderNotMatch = "Race: first and last sender not match"
+	ReasonRaceDataUnachievable    = "Race: data is unachievable"
+	ReasonRaceStartTooEarly = "Race: you start too early"
 )

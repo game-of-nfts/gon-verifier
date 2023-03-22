@@ -12,16 +12,19 @@ const (
 	VerifyRegistryStageOne = iota
 	VerifyRegistryStageTwo
 	VerifyRegistryStageTwoShadow
+	VerifyRegistryStageThree
 )
 
 func NewRegistry(r *chain.Registry, stage int) *Registry {
 	switch stage {
-	case 0:
+	case VerifyRegistryStageOne:
 		return NewRegistryOne(r)
-	case 1:
+	case VerifyRegistryStageTwo:
 		return NewRegistryTwo(r)
-	case 2:
+	case VerifyRegistryStageTwoShadow:
 		return NewRegistryTwoShadow(r)
+	case VerifyRegistryStageThree:
+		return NewRegistryThree(r)
 	}
 	return nil
 }
@@ -66,6 +69,17 @@ func NewRegistryTwoShadow(r *chain.Registry) *Registry {
 		"A16": NewFlowVerifier(r, "b04b", false),
 		"A17": NewFlowVerifier(r, "c01b", false),
 		"A19": NewFlowVerifier(r, "c03b", false),
+	}
+	return &Registry{vs}
+}
+
+func NewRegistryThree(r *chain.Registry) *Registry {
+	vs := map[string]Verifier{
+		"B1": NewRaceVerifier(r,  DenomIdGonIndivRace1, LastOwner,StartBlockHeightIndivRace1, EndBlockHeightIndivRace),
+		"B2": NewRaceVerifier(r,  DenomIdGonIndivRace2, LastOwner,StartBlockHeightIndivRace2,  EndBlockHeightIndivRace),
+		"B5": NewRaceVerifier(r,  DenomIdGonTeamRace1, LastOwner, StartBlockHeightTeamRace, EndBlockHeightGame),
+		"B6": NewRaceVerifier(r,  DenomIdGonTeamRace2, LastOwner, StartBlockHeightTeamRace, EndBlockHeightGame),
+		"B7": NewRaceVerifier(r,  DenomIdGonTeamRace3, LastOwner, StartBlockHeightTeamRace, EndBlockHeightGame),
 	}
 	return &Registry{vs}
 }

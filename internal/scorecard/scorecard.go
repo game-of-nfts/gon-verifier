@@ -10,11 +10,19 @@ import (
 )
 
 const (
+	// entrance directory
 	DefaultScoreCardFile      = "scorecard.xlsx"
 	DefaultEvidenceFile       = "evidence.xlsx"
+	DefaultRankIndivOne = "rankIndivOne.xlsx"
+	DefaultRankIndivTwo = "rankIndivTwo.xlsx"
+	DefaultRankTeamOne = "rankTeam.xlsx"
+	DefaultQuizGame = "quizWinner.xlsx"
+	// user directory
 	DefaultStageOneTaskPoint  = "taskpoint1.xlsx"
 	DefaultStageTwoTaskPoint  = "taskpoint2.xlsx"
 	DefaultStageTwoBTaskPoint = "taskpoint2b.xlsx"
+	DefaultStageThreeTaskPoint= "taskpoint3.xlsx"
+	// sheet name
 	DefaultTaskPointSheet     = "result"
 	DefaultScoreCardSheet     = "result"
 )
