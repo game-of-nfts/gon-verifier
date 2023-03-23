@@ -19,9 +19,9 @@ type IndivRanker struct {
 	Entrance       string
 }
 
-func NewIndivRanker(entrance, targetTaskNo, taskNo string, taskPoint int32) IndivRanker {
+func NewIndivRanker(entrance, targetTaskNo, taskNo string, taskPoint int32) *IndivRanker {
 	indivRaceInfos := make([]IndivRaceInfo, 0)
-	return IndivRanker{
+	return &IndivRanker{
 		TargetTaskNo:   targetTaskNo,
 		TaskNo:         taskNo,
 		TaskPoint:      taskPoint,

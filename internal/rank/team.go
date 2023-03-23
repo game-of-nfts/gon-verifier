@@ -19,9 +19,9 @@ type TeamRanker struct {
 	Entrance      string
 }
 
-func NewTeamRanker(entrance string, targetTaskNos []string, taskNo string, taskPoint int32) TeamRanker {
+func NewTeamRanker(entrance string, targetTaskNos []string, taskNo string, taskPoint int32) *TeamRanker {
 	teamRaceInfos := make([]TeamRaceInfo, 0)
-	return TeamRanker{
+	return &TeamRanker{
 		TargetTaskNos: targetTaskNos,
 		TaskNo:        taskNo,
 		TaskPoint:     taskPoint,

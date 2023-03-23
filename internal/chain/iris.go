@@ -95,6 +95,24 @@ func (i *Iris) getTxResultIbcNft(data *types.TxResponse) (any, error) {
 	return data.IbcNftPkg()
 }
 
+func (i *Iris) GetCollection(classID string) (*nfttypes.QueryCollectionResponse, error) {
+	req := nfttypes.QueryCollectionRequest{
+		DenomId: classID,
+	}
+
+	resi, err := withGrpcRetry(func() (interface{}, error) {
+		return i.nftClient.Collection(context.Background(), &req)
+	})
+	if err != nil {
+		return nil, err
+	}
+	res, ok := resi.(*nfttypes.QueryCollectionResponse)
+	if !ok {
+		return nil, err
+	}
+	return res, nil
+}
+
 func (i *Iris) GetNFT(classID, nftID string) (*NFT, error) {
 	req := &nfttypes.QueryNFTRequest{
 		DenomId: classID,
