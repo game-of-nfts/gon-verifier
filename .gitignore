@@ -9,4 +9,5 @@ internal/chain/*_test.go
 internal/scorecard/*_test.go
 internal/verifier/*_test.go
 internal/types/*_test.go
+internal/rank/*_test.go
 internal/*_test.go
