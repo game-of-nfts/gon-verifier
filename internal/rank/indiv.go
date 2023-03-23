@@ -89,21 +89,28 @@ func (ir *IndivRanker) loadRaceInfo(file string) error {
 		return errors.New("result sheet not found")
 	}
 
-	indivRace := IndivRaceInfo{}
+	var indivRace *IndivRaceInfo = nil
 	for _, row := range rows {
-		raceInfo := RaceInfo{}
 		if row[0] == ir.TargetTaskNo && strings.HasPrefix(row[3], "race") {
-			indivRace.teamName = row[1]
-			indivRace.path = file
-			err := BuildRaceInfo(&raceInfo, row[3])
+			raceInfo, err := BuildRaceInfo(row[3])
 			if err != nil {
 				return err
 			}
-			indivRace.RaceInfo = raceInfo
+			if raceInfo != nil {
+				indivRace = &IndivRaceInfo{
+					RaceInfo: *raceInfo,
+					teamName: row[1],
+					path:     file,
+				}
+			}
 			break
 		}
 	}
-	ir.IndivRaceInfos = append(ir.IndivRaceInfos, indivRace)
+
+	if indivRace != nil {
+		ir.IndivRaceInfos = append(ir.IndivRaceInfos, *indivRace)
+	}
+
 	return nil
 }
 

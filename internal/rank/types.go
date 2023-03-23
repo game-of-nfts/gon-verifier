@@ -33,28 +33,28 @@ func NewTeamRaceInfo() *TeamRaceInfo {
 	}
 }
 
-func BuildRaceInfo(r *RaceInfo, reason string) error {
+func BuildRaceInfo(reason string) (*RaceInfo, error) {
 	reason = strings.TrimSpace(reason)
 	strs := strings.Split(reason, "/")
 	if len(strs) != 4 {
-		return errors.New("race format invalid")
+		return nil, errors.New("race format invalid")
 	}
 	start, err := strconv.Atoi(strs[1])
 	if err != nil {
-		return err
+		return nil, err
 	}
 	end, _ := strconv.Atoi(strs[2])
 	if err != nil {
-		return err
+		return nil, err
 	}
 	diff, _ := strconv.Atoi(strs[3])
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	r.start = start
-	r.end = end
-	r.diff = diff
-
-	return nil
+	return &RaceInfo{
+		start: start,
+		end:   end,
+		diff:  diff,
+	}, nil
 }
