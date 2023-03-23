@@ -11,20 +11,20 @@ import (
 
 const (
 	// entrance directory
-	DefaultScoreCardFile      = "scorecard.xlsx"
-	DefaultEvidenceFile       = "evidence.xlsx"
-	DefaultRankIndivOne = "rankIndivOne.xlsx"
-	DefaultRankIndivTwo = "rankIndivTwo.xlsx"
-	DefaultRankTeamOne = "rankTeam.xlsx"
-	DefaultQuizGame = "quizWinner.xlsx"
+	DefaultScoreCardFile = "scorecard.xlsx"
+	DefaultEvidenceFile  = "evidence.xlsx"
+	DefaultRankIndivOne  = "rankB3.xlsx"
+	DefaultRankIndivTwo  = "rankB4.xlsx"
+	DefaultRankTeamOne   = "rankB8.xlsx"
+	DefaultQuizGame      = "rankB9.xlsx"
 	// user directory
-	DefaultStageOneTaskPoint  = "taskpoint1.xlsx"
-	DefaultStageTwoTaskPoint  = "taskpoint2.xlsx"
-	DefaultStageTwoBTaskPoint = "taskpoint2b.xlsx"
-	DefaultStageThreeTaskPoint= "taskpoint3.xlsx"
+	DefaultStageOneTaskPoint   = "taskpoint1.xlsx"
+	DefaultStageTwoTaskPoint   = "taskpoint2.xlsx"
+	DefaultStageTwoBTaskPoint  = "taskpoint2b.xlsx"
+	DefaultStageThreeTaskPoint = "taskpoint3.xlsx"
 	// sheet name
-	DefaultTaskPointSheet     = "result"
-	DefaultScoreCardSheet     = "result"
+	DefaultTaskPointSheet = "result"
+	DefaultScoreCardSheet = "result"
 )
 
 // ScoreCard reads task results and output to the scorecard
@@ -209,14 +209,19 @@ func (sc *ScoreCard) concatenateTaskNo(taskResults TaskResults) string {
 func (sc *ScoreCard) concatenateFailedReason(taskResults TaskResults) string {
 	// NOTE: call after concatenateTaskNo
 	failedReasons := make([]string, 0)
+	reasons := make(map[string]bool, 0)
 	for i := 0; i < len(taskResults); i++ {
 		if len(taskResults[i].Reason) == 0 {
 			continue
 		}
-		failedReason := taskResults[i].TaskNo + ": " + taskResults[i].Reason
-		failedReasons = append(failedReasons, failedReason)
+		failedReason := taskResults[i].TaskNo + ":" + taskResults[i].Reason
+		reasons[failedReason] = true
 	}
-	return strings.Join(failedReasons, " ")
+	for key := range reasons {
+		failedReasons = append(failedReasons, key)
+	}
+
+	return strings.Join(failedReasons, ",")
 }
 
 func (sc *ScoreCard) calculateTotalPoint(taskResults TaskResults) int {
