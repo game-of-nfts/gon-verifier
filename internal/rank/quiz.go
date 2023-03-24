@@ -7,6 +7,7 @@ import (
 	"github.com/taramakage/gon-verifier/internal/scorecard"
 	"github.com/xuri/excelize/v2"
 	"os"
+	"path"
 	"path/filepath"
 	"sort"
 	"strconv"
@@ -207,7 +208,9 @@ func (qr *QuizRanker) WriteTaskPoint() error {
 }
 
 func (qr *QuizRanker) clearLegacyTaskPoint(quizer Quizer) error {
-	file, err := excelize.OpenFile(quizer.Path)
+	dir := path.Dir(quizer.Path)
+	taskpoint3 := path.Join(dir, "taskpoint3.xlsx")
+	file, err := excelize.OpenFile(taskpoint3)
 	if err != nil {
 		return err
 	}
@@ -235,7 +238,9 @@ func (qr *QuizRanker) clearLegacyTaskPoint(quizer Quizer) error {
 }
 
 func (qr *QuizRanker) writeTaskPoint(quizer Quizer) error {
-	file, err := excelize.OpenFile(quizer.Path)
+	dir := path.Dir(quizer.Path)
+	taskpoint3 := path.Join(dir, "taskpoint3.xlsx")
+	file, err := excelize.OpenFile(taskpoint3)
 	if err != nil {
 		return err
 	}

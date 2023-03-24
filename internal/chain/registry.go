@@ -19,9 +19,10 @@ const (
 	ChainGRPCUptick   = "52.220.252.160:9090"
 	ChainGRPCOmniflix = "65.21.93.56:9090"
 
-	ChainRPCIris     = "http://34.80.93.133:26657/"
-	ChainRPCStars    = "https://rpc.elgafar-1.stargaze-apis.com:443/"
-	ChainRPCJuno     = "https://rpc.uni.junonetwork.io:443/"
+	ChainRPCIris  = "http://34.80.93.133:26657/"
+	ChainRPCStars = "https://rpc.elgafar-1.stargaze-apis.com:443/"
+	//ChainRPCJuno     = "https://rpc.uni.junonetwork.io:443/"
+	ChainRPCJuno     = "https://rpc.uni.juno.deuslabs.fi:443/"
 	ChainRPCUptick   = "http://52.220.252.160:26657/"
 	ChainRPCOmnilfix = "http://65.21.93.56:26657/"
 )

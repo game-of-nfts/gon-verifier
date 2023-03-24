@@ -91,6 +91,9 @@ func (ir *IndivRanker) loadRaceInfo(file string) error {
 
 	var indivRace *IndivRaceInfo = nil
 	for _, row := range rows {
+		if len(row) < 4 {
+			continue
+		}
 		if row[0] == ir.TargetTaskNo && strings.HasPrefix(row[3], "race") {
 			raceInfo, err := BuildRaceInfo(row[3])
 			if err != nil {

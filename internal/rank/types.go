@@ -24,6 +24,7 @@ type TeamRaceInfo struct {
 	startSum  int
 	teamName  string
 	path      string
+	rankable  bool
 }
 
 func NewTeamRaceInfo() *TeamRaceInfo {

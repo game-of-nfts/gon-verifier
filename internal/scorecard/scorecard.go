@@ -4,6 +4,7 @@ import (
 	"github.com/xuri/excelize/v2"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -77,6 +78,10 @@ func (sc *ScoreCard) Generate() error {
 			taskPointFiles = append(taskPointFiles, path)
 		}
 
+		if !info.IsDir() && info.Name() == DefaultStageThreeTaskPoint {
+			taskPointFiles = append(taskPointFiles, path)
+		}
+
 		if info.IsDir() && len(taskPointFiles) != 0 {
 			allTaskPointFiles = append(allTaskPointFiles, taskPointFiles)
 			taskPointFiles = []string{}
@@ -91,6 +96,7 @@ func (sc *ScoreCard) Generate() error {
 	var entries []*ScoreCardEntry
 	for _, taskPointFiles := range allTaskPointFiles {
 		entry, err := sc.HandleTaskPoint(taskPointFiles)
+		entry.filterRedundantReason()
 		if err != nil {
 			continue
 		}
@@ -185,6 +191,8 @@ func (sc *ScoreCard) HandleTaskPoint(taskPointFiles []string) (*ScoreCardEntry, 
 		}
 	}
 
+	sc.filterRaceReason(taskResults)
+
 	return &ScoreCardEntry{
 		taskCompleted: sc.concatenateTaskNo(taskResults),
 		totalPoint:    sc.calculateTotalPoint(taskResults),
@@ -192,6 +200,15 @@ func (sc *ScoreCard) HandleTaskPoint(taskPointFiles []string) (*ScoreCardEntry, 
 		failedReason:  sc.concatenateFailedReason(taskResults),
 		githubAccount: "@" + github,
 	}, nil
+}
+
+// filterReason will filter race from reason
+func (sc *ScoreCard) filterRaceReason(results TaskResults) {
+	for i, taskResult := range results {
+		if strings.HasPrefix(taskResult.TaskNo, "B") && taskResult.Point != 0 {
+			results[i].Reason = ""
+		}
+	}
 }
 
 func (sc *ScoreCard) concatenateTaskNo(taskResults TaskResults) string {
@@ -230,4 +247,23 @@ func (sc *ScoreCard) calculateTotalPoint(taskResults TaskResults) int {
 		totalPoint += taskResult.Point
 	}
 	return totalPoint
+}
+
+// if A1 is in taskCompleted, then A1:reason shouldn't show up.
+func (sce *ScoreCardEntry) filterRedundantReason() {
+	// A1,A2,A3,A4
+	taskNos := strings.Split(sce.taskCompleted, ",")
+	// A1:reason,A2:reason
+	taskReasons := strings.Split(sce.failedReason, ",")
+	for _, tn := range taskNos {
+		for _, tr := range taskReasons {
+			if strings.HasPrefix(tr, tn) {
+				sce.failedReason = strings.Replace(sce.failedReason, tr, "", 1)
+				continue
+			}
+		}
+	}
+	re := regexp.MustCompile(",+")
+	sce.failedReason = re.ReplaceAllString(sce.failedReason, ", ")
+	strings.Trim(sce.failedReason, ",")
 }

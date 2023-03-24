@@ -94,6 +94,9 @@ func (tr *TeamRanker) loadRaceInfo(file string) error {
 
 	for _, row := range rows {
 		for _, targetTaskNo := range tr.TargetTaskNos {
+			if len(row) < 4 {
+				continue
+			}
 			if row[0] == targetTaskNo && strings.HasPrefix(row[3], "race") {
 				raceInfo, err := BuildRaceInfo(row[3])
 				if err != nil {
@@ -113,7 +116,9 @@ func (tr *TeamRanker) loadRaceInfo(file string) error {
 			teamRace.diffSum += raceInfo.diff
 			teamRace.startSum += raceInfo.start
 		}
-
+		if len(teamRace.raceInfos) == 3 {
+			teamRace.rankable = true
+		}
 		tr.TeamRaceInfos = append(tr.TeamRaceInfos, teamRace)
 	}
 
@@ -136,7 +141,7 @@ func (tr *TeamRanker) GenerateRank() error {
 	defer f.Close()
 
 	sheetName := "result"
-	index, err := f.NewSheet(sheetName)
+	sheetIndex, err := f.NewSheet(sheetName)
 	if err != nil {
 		return err
 	}
@@ -146,14 +151,19 @@ func (tr *TeamRanker) GenerateRank() error {
 	f.SetCellValue(sheetName, "C1", "SumOfDiffHeight")
 	f.SetCellValue(sheetName, "D1", "SumOfStartHeight")
 
-	for i, teamRaceInfo := range tr.TeamRaceInfos {
-		f.SetCellValue(sheetName, fmt.Sprintf("A%d", i+2), i+1)
-		f.SetCellValue(sheetName, fmt.Sprintf("B%d", i+2), teamRaceInfo.teamName)
-		f.SetCellValue(sheetName, fmt.Sprintf("C%d", i+2), teamRaceInfo.diffSum)
-		f.SetCellValue(sheetName, fmt.Sprintf("D%d", i+2), teamRaceInfo.startSum)
+	index := 1
+	for _, teamRaceInfo := range tr.TeamRaceInfos {
+		if !teamRaceInfo.rankable {
+			continue
+		}
+		f.SetCellValue(sheetName, fmt.Sprintf("A%d", index+1), index)
+		f.SetCellValue(sheetName, fmt.Sprintf("B%d", index+1), teamRaceInfo.teamName)
+		f.SetCellValue(sheetName, fmt.Sprintf("C%d", index+1), teamRaceInfo.diffSum)
+		f.SetCellValue(sheetName, fmt.Sprintf("D%d", index+1), teamRaceInfo.startSum)
+		index++
 	}
 
-	f.SetActiveSheet(index)
+	f.SetActiveSheet(sheetIndex)
 
 	fileName := filepath.Join(tr.Entrance, fmt.Sprintf("rank%s.xlsx", tr.TaskNo))
 	if err := f.SaveAs(fileName); err != nil {
