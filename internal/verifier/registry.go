@@ -75,11 +75,11 @@ func NewRegistryTwoShadow(r *chain.Registry) *Registry {
 
 func NewRegistryThree(r *chain.Registry) *Registry {
 	vs := map[string]Verifier{
-		"B1": NewRaceVerifier(r,  DenomIdGonIndivRace1, LastOwner,StartBlockHeightIndivRace1, EndBlockHeightIndivRace),
-		"B2": NewRaceVerifier(r,  DenomIdGonIndivRace2, LastOwner,StartBlockHeightIndivRace2,  EndBlockHeightIndivRace),
-		"B5": NewRaceVerifier(r,  DenomIdGonTeamRace1, LastOwner, StartBlockHeightTeamRace, EndBlockHeightGame),
-		"B6": NewRaceVerifier(r,  DenomIdGonTeamRace2, LastOwner, StartBlockHeightTeamRace, EndBlockHeightGame),
-		"B7": NewRaceVerifier(r,  DenomIdGonTeamRace3, LastOwner, StartBlockHeightTeamRace, EndBlockHeightGame),
+		"B1": NewRaceVerifier(r, DenomIdGonIndivRace1, LastOwner, StartBlockHeightIndivRace1, EndBlockHeightIndivRace),
+		"B2": NewRaceVerifier(r, DenomIdGonIndivRace2, LastOwner, StartBlockHeightIndivRace2, EndBlockHeightIndivRace),
+		"B5": NewRaceVerifier(r, DenomIdGonTeamRace1, LastOwner, StartBlockHeightTeamRace, EndBlockHeightTeamRace),
+		"B6": NewRaceVerifier(r, DenomIdGonTeamRace2, LastOwner, StartBlockHeightTeamRace, EndBlockHeightTeamRace),
+		"B7": NewRaceVerifier(r, DenomIdGonTeamRace3, LastOwner, StartBlockHeightTeamRace, EndBlockHeightTeamRace),
 	}
 	return &Registry{vs}
 }
