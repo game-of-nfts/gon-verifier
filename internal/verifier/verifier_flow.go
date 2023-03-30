@@ -108,7 +108,7 @@ func (v FlowVerifier) ValidateByTxHash(param *FlowParams, req *Request) (bool, s
 		srcChain := v.r.GetChain(v.f.GetSrcChainAbbr(i))
 		txi, err := srcChain.GetTx(txHash, types.TxResultTypeIbcNft)
 		if err != nil {
-			return false, ReasonTxResultUnachievable
+			return false, ReasonTxResultUnachievable + "" + v.f.GetSrcChainAbbr(i)
 		}
 		tx, ok := txi.(types.TxResultIbcNft)
 		if !ok {
