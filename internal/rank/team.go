@@ -173,18 +173,19 @@ func (tr *TeamRanker) GenerateRank() error {
 }
 
 func (tr *TeamRanker) WriteTaskPoint() error {
-	for i, teamRaceInfo := range tr.TeamRaceInfos {
-		// top 10
-		if i == 10 {
-			break
-		}
+	idx := 0
+	for _, teamRaceInfo := range tr.TeamRaceInfos {
 		err := tr.clearLegacyTaskPoint(teamRaceInfo)
 		if err != nil {
 			return err
 		}
-		err = tr.writeTaskPoint(teamRaceInfo)
-		if err != nil {
-			return err
+
+		if teamRaceInfo.rankable && idx < 10 {
+			err = tr.writeTaskPoint(teamRaceInfo)
+			if err != nil {
+				return err
+			}
+			idx++
 		}
 	}
 	return nil
