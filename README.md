@@ -1,21 +1,20 @@
-# GoN Verifier
+# Gon Verifier
 
-## Verifier
+## Install
 
-`Verfier` verifies each participant's task evidence and output a `taskpoint.xlsx` file
-- `taskpoint1.xlsx` Stage 1
-- `taskpoint2.xlsx` Stage 2
-- `taskpoint2b.xlsx` Stage 2 (with new chan/port pair)
-- `taskpoint3.xlsx` Stage 3
+```bash
+go install ./cmd/gon-verifier 
+```
 
-## Ranker
+## Usage
 
-`Ranker` reads `taskpoint3.xlsx` under each participant's directory.
-- If a rankable task has reason start with `race/xxx/yyy/zzz`, it will be ranked.
-- Ranker will struct the reason and output a corresponding `rank.xlsx` file.
-- Ranker will append the top 10 back to `taskpoint3.xlsx` file under each participant's directory.
+```bash
+gon-verifier <evidence.xlsx>
+```
 
-## Scorecard
+It will output four evidence results, including point lost reasons:
 
-`Scorecard` reads `taskpoint{1,2,3}.xlsx` under each participant's directory and output a `scorecard.xlsx` file.
-
+- `taskpoint1.xlxs` Stage one result.
+- `taskpoint2.xlsx` Stage two result.
+- `taskpoint2b.xlsx` Some use new chan/pair of stars and juno, this will generate points for thess task.
+- `taskpoint3.xlsx` Stage three result, except for quiz game.
