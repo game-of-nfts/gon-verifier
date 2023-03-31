@@ -130,7 +130,7 @@ func (tr *TeamRanker) Sort() {
 		diff1 := tr.TeamRaceInfos[i].diffSum
 		diff2 := tr.TeamRaceInfos[j].diffSum
 		if diff1 == diff2 {
-			return tr.TeamRaceInfos[i].startSum < tr.TeamRaceInfos[i].startSum
+			return tr.TeamRaceInfos[i].startSum < tr.TeamRaceInfos[j].startSum
 		}
 		return diff1 < diff2
 	})
